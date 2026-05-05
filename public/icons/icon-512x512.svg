@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="76" fill="#1d4ed8"/>
+  <text x="256" y="208" text-anchor="middle" font-size="72" font-family="Arial, sans-serif" fill="#ffffff" font-weight="700">SMRU</text>
+  <text x="256" y="300" text-anchor="middle" font-size="60" font-family="Arial, sans-serif" fill="#dbeafe" font-weight="600">TOUR</text>
+  <circle cx="156" cy="372" r="20" fill="#dbeafe"/>
+  <circle cx="256" cy="372" r="20" fill="#dbeafe"/>
+  <circle cx="356" cy="372" r="20" fill="#dbeafe"/>
+</svg>

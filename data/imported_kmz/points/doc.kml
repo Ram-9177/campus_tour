@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Points</name>
+    <Style id="icon-1899-0288D1-nodesc-normal">
+      <IconStyle>
+        <scale>1</scale>
+        <Icon>
+          <href>images/icon-1.png</href>
+        </Icon>
+        <hotSpot x="32" xunits="pixels" y="64" yunits="insetPixels"/>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1899-0288D1-nodesc-highlight">
+      <IconStyle>
+        <scale>1</scale>
+        <Icon>
+          <href>images/icon-1.png</href>
+        </Icon>
+        <hotSpot x="32" xunits="pixels" y="64" yunits="insetPixels"/>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1899-0288D1-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1899-0288D1-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1899-0288D1-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Placemark>
+      <name>Main Gate - Entrance</name>
+      <description>Where this is the Main Entrance Point </description>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.7278257,17.3320276,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Parking At Main Gate</name>
+      <description>Out side Parking</description>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.7280134,17.331769,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Canteen </name>
+      <description>Main Canteen</description>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.7269044,17.332184,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>A2 Block</name>
+      <description>Hostel's - Demo Room's</description>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.7278911,17.3312598,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>A1 Block</name>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.7284932,17.3308262,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Bike Rental's</name>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.7267728,17.3318903,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Sport's Complex</name>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.7262562,17.3320407,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Central Library</name>
+      <description>Digital Library</description>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.72589,17.3319703,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>MBA Block - Law School</name>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.7254836,17.3324094,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>ATM</name>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.7260858,17.3321418,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Cricket Ground</name>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.7260837,17.3309475,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>FootBall Ground</name>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.7277432,17.3314455,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Mini Sport's Area</name>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.7262234,17.3311236,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Girl's Hostel</name>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.7253728,17.3311377,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Boy's Hostel</name>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.7251521,17.3303493,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Bus Parking Area</name>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.7249818,17.3309766,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Mini - Parking Area</name>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.7245287,17.3313922,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Admission Room</name>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.7243262,17.3316023,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>University - Block</name>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.7243304,17.3319623,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Rehab - Block</name>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.723607,17.3309915,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Garden</name>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.723206,17.3313386,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Swimming Pool</name>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.7230652,17.3311581,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Amphi Theater</name>
+      <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          78.7236271,17.3314142,0
+        </coordinates>
+      </Point>
+    </Placemark>
+  </Document>
+</kml>

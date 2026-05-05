@@ -1,26 +1,100 @@
+@import 'leaflet/dist/leaflet.css';
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #ffffff;
+    --foreground: #0f172a;
+    --primary: #0b57d0;
+    --primary-light: #4c8bf5;
+    --primary-dark: #0847ad;
+    --secondary: #f0f7ff;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --radius: 1rem;
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-feature-settings: "rounding" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family: var(--font-inter, system-ui, sans-serif);
+  }
+
+  * {
+    border-color: var(--border);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* Glassmorphism */
+  .glass {
+    @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)];
+  }
+
+  .glass-dark {
+    @apply bg-slate-900/80 backdrop-blur-xl border border-white/10 shadow-2xl;
+  }
+
+  /* Premium Buttons */
+  .btn-premium {
+    @apply relative overflow-hidden h-12 px-6 rounded-2xl bg-linear-to-r from-[#0b57d0] to-[#0a4cc0] text-white font-bold text-sm transition-all duration-300 hover:shadow-[0_10px_25px_-5px_rgba(11,87,208,0.4)] active:scale-95 flex items-center justify-center gap-2;
+  }
+
+  .btn-premium::after {
+    content: '';
+    @apply absolute inset-0 bg-linear-to-r from-white/20 to-transparent opacity-0 transition-opacity duration-300;
+  }
+
+  .btn-premium:hover::after {
+    @apply opacity-100;
+  }
+
+  /* Cinematic Elements */
+  .cinematic-header {
+    background:
+      radial-gradient(120% 140% at 0% 0%, rgba(11, 87, 208, 0.15) 0%, rgba(11, 87, 208, 0) 42%),
+      radial-gradient(90% 120% at 100% 20%, rgba(14, 165, 233, 0.1) 0%, rgba(14, 165, 233, 0) 46%),
+      linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    @apply border-b border-slate-200/50 shadow-xs backdrop-blur-md;
+  }
+
+  /* Animation Containers */
+  .animate-in {
+    animation: fade-in-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .delay-100 { animation-delay: 100ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
 }
+
+@keyframes fade-in-up {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 3s ease-in-out infinite;
+}
+
+@supports (padding: max(0px)) {
+  :root {
+    --safe-left: env(safe-area-inset-left);
+    --safe-right: env(safe-area-inset-right);
+  }
+}
+

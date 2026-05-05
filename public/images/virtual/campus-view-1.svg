@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img" aria-labelledby="t1 d1">
+  <title id="t1">Campus View 1</title>
+  <desc id="d1">Stylized campus entrance landscape.</desc>
+  <defs>
+    <linearGradient id="g1" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0b57d0"/>
+      <stop offset="100%" stop-color="#22c1c3"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="700" fill="url(#g1)"/>
+  <rect y="470" width="1200" height="230" fill="#134e6f" opacity="0.7"/>
+  <rect x="190" y="220" width="820" height="250" rx="28" fill="#ffffff" opacity="0.2"/>
+  <rect x="250" y="260" width="700" height="170" rx="18" fill="#ffffff" opacity="0.28"/>
+  <text x="600" y="348" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="54" font-weight="700">St. Mary's University</text>
+  <text x="600" y="402" text-anchor="middle" fill="#dbeafe" font-family="Arial, sans-serif" font-size="28">Main Entrance View</text>
+</svg>
