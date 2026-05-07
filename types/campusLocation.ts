@@ -28,6 +28,19 @@ export type CampusLocationCategory =
   | 'garden'
   | 'other';
 
+export interface LocationContent {
+  description: CampusLocationI18nText;
+  script: CampusLocationI18nText;
+  audio: CampusLocationI18nMedia;
+}
+
+export interface AdmissionsCta {
+  applyUrl?: string;
+  brochureUrl?: string;
+  whatsappUrl?: string;
+  counsellorText?: string;
+}
+
 export interface CampusLocation {
   id: string;
   slug: string;
@@ -39,15 +52,33 @@ export interface CampusLocation {
   x?: number;
   y?: number;
   radiusMeters: number;
+  
+  // Default fallback content
   description: CampusLocationI18nText;
   script: CampusLocationI18nText;
   audio: CampusLocationI18nMedia;
+  
+  // Admissions-focused variants
+  contentVariants?: {
+    physical?: LocationContent;
+    virtual?: LocationContent;
+    buggy?: LocationContent;
+  };
+
+  // Admissions storytelling metadata
+  uspTags: string[];
+  parentTrustPoints: string[];
+  studentHighlights: string[];
+  admissionsCta?: AdmissionsCta;
+  
   images: string[];
   videos: string[];
   virtual360Url?: string;
   routeOrder: number;
   recommendedFor: AppUserType[];
   active: boolean;
+  
+  nearestRoadNodeId?: string;
   createdAt?: string;
   updatedAt?: string;
 }

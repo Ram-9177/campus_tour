@@ -1,72 +1,84 @@
 'use client';
 
-import React from 'react';
-import type { RoadNode } from '@/lib/roadGraphBuilder';
+import React, { useEffect, useState } from 'react';
+import { Polyline } from 'react-leaflet';
+import { campusRouteEngine, type RouteResult } from '@/lib/campusRouteEngine';
+import mediaSync from '@/lib/mediaSyncEngine';
+import { useTourSession } from '@/hooks/useTourSession';
 
-interface Props {
-  path: RoadNode[];
-  mode?: 'walk' | 'cart' | 'vehicle' | 'manual';
-}
+export default function RouteHighlightLayer() {
+  const { session } = useTourSession();
+  const [route, setRoute] = useState<RouteResult | null>(null);
+  
+  // For demo/standalone purposes, we might use user location.
+  // But here we'll simulate a route from a "Home/Start" or between points if needed.
+  // The user wants navigation for campus_cart, walk_with_me, etc.
+  
+  useEffect(() => {
+    const unsub = mediaSync.subscribe((currentLocation) => {
+      if (!currentLocation) {
+        setRoute(null);
+        return;
+      }
 
-export default function RouteHighlightLayer({ path, mode = 'manual' }: Props) {
-  if (!path || path.length < 2) return null;
+      // If we are in a tour mode, we might want to show the route to the CURRENT point.
+      // Since we don't have real-time GPS here, we'll simulate from the "Main Gate" 
+      // if it's the first stop, or from the PREVIOUS stop.
+      
+      const locations = mediaSync.getLocations();
+      const currentIndex = locations.findIndex(l => l.id === currentLocation.id);
+      
+      if (currentIndex <= 0) {
+        // From Entrance (approx)
+        const result = campusRouteEngine.findRoute(
+           17.3320276, 78.7278257, // Main Gate
+           currentLocation.latitude,
+           currentLocation.longitude
+        );
+        setRoute(result);
+      } else {
+        const prev = locations[currentIndex - 1];
+        const result = campusRouteEngine.findRoute(
+           prev.latitude,
+           prev.longitude,
+           currentLocation.latitude,
+           currentLocation.longitude
+        );
+        setRoute(result);
+      }
+    });
 
-  const points = path.map(n => `${n.x},${n.y}`).join(' ');
+    return unsub;
+  }, [session?.navigationMode]);
 
-  // Dynamic colors based on mode
-  const strokeColor = 
-    mode === 'walk' ? '#3b82f6' : 
-    mode === 'cart' ? '#10b981' : 
-    mode === 'vehicle' ? '#f59e0b' : '#6366f1';
+  if (!route) return null;
 
   return (
-    <g data-layer="route-highlight">
-      {/* Outer glow/shadow */}
-      <polyline
-        points={points}
-        fill="none"
-        stroke={strokeColor}
-        strokeWidth="12"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="opacity-20 blur-[2px]"
+    <>
+      {/* Route Glow */}
+      <Polyline
+        positions={route.path}
+        pathOptions={{
+          color: '#3b82f6',
+          weight: 12,
+          opacity: 0.2,
+          lineCap: 'round',
+          lineJoin: 'round',
+        }}
       />
-      
-      {/* Secondary glow */}
-      <polyline
-        points={points}
-        fill="none"
-        stroke={strokeColor}
-        strokeWidth="8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="opacity-40 animate-pulse"
+      {/* Active Route Path */}
+      <Polyline
+        positions={route.path}
+        pathOptions={{
+          color: '#2563eb', // blue-600
+          weight: 4,
+          opacity: 0.9,
+          dashArray: '1, 10',
+          lineCap: 'round',
+          lineJoin: 'round',
+          className: 'animate-dash'
+        }}
       />
-
-      {/* Main route line */}
-      <polyline
-        points={points}
-        fill="none"
-        stroke={strokeColor}
-        strokeWidth="4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="transition-all duration-500 shadow-xl"
-        strokeDasharray="10 6"
-        strokeDashoffset="0"
-      >
-        <animate 
-          attributeName="stroke-dashoffset" 
-          from="32" 
-          to="0" 
-          dur="1s" 
-          repeatCount="indefinite" 
-        />
-      </polyline>
-
-      {/* Start/End indicators */}
-      <circle cx={path[0].x} cy={path[0].y} r="6" fill="white" stroke={strokeColor} strokeWidth="3" />
-      <circle cx={path[path.length - 1].x} cy={path[path.length - 1].y} r="8" fill={strokeColor} className="animate-bounce" />
-    </g>
+    </>
   );
 }

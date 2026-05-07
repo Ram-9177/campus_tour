@@ -8,7 +8,6 @@ import WalkWithMePanel from '@/components/map/WalkWithMePanel';
 import CartModePanel from '@/components/cart/CartModePanel';
 import MapLegend from '@/components/map/MapLegend';
 import CampusMapBottomSheet from '@/components/map/CampusMapBottomSheet';
-import MiniAudioPlayer from '@/components/audio/MiniAudioPlayer';
 import { useDelayedLocationAudio } from '@/hooks/useDelayedLocationAudio';
 import { locationSequence } from '@/lib/locationSequence';
 import TourCompletionCard from '@/components/tour/TourCompletionCard';
@@ -19,9 +18,18 @@ import type { AppTourMode } from '@/types/appRules';
 import type { ModeExperienceConfig } from '@/types/modeExperience';
 import { useSelectedLanguage } from '@/hooks/useSelectedLanguage';
 import audioEngine from '@/lib/audioGuideEngine';
+import StickyAudioControlBar from '@/components/audio/StickyAudioControlBar';
+import NavigationInstructionCard from '@/components/navigation/NavigationInstructionCard';
+import { usePhysicalTourLocationWatcher } from '@/hooks/usePhysicalTourLocationWatcher';
+import NearbyPointAutoOpen from '@/components/location/NearbyPointAutoOpen';
 
 export default function MapPageClient() {
   useDelayedLocationAudio();
+  usePhysicalTourLocationWatcher();
+  
+  useEffect(() => {
+    return () => audioEngine.stop();
+  }, []);
   const searchParams = useSearchParams();
   const selectedLanguage = useSelectedLanguage();
   const [progress, setProgress] = useState(locationSequence.getProgress());
@@ -32,10 +40,6 @@ export default function MapPageClient() {
   useEffect(() => {
     return locationSequence.subscribe(setProgress);
   }, []);
-
-  useEffect(() => {
-    audioEngine.setLanguage(selectedLanguage);
-  }, [selectedLanguage]);
 
   const requestedMode = queryModeToTourMode(searchParams.get('mode'));
   useEffect(() => {
@@ -64,10 +68,12 @@ export default function MapPageClient() {
     applyModeScope();
     window.addEventListener('smru_mode_config_updated', applyModeScope);
     window.addEventListener('smru_locations_updated', applyModeScope);
+    window.addEventListener('storage', applyModeScope);
 
     return () => {
       window.removeEventListener('smru_mode_config_updated', applyModeScope);
       window.removeEventListener('smru_locations_updated', applyModeScope);
+      window.removeEventListener('storage', applyModeScope);
       mediaSync.setScopeLocationIds(null);
       locationSequence.setScopeLocationIds(null);
     };
@@ -86,35 +92,46 @@ export default function MapPageClient() {
 
   return (
     <>
-      <div className="space-y-3">
-        <SMRUCampusWorldMap isWalkMode={isWalkMode} allowedLocationIds={isCartMode ? undefined : modeConfig?.locationIds} language={selectedLanguage} />
-        <MapLegend />
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="text-sm font-bold text-slate-900">{getModeLabel(activeMode)}</div>
-            <div className="text-xs font-semibold text-slate-600">
+      <div className="space-y-3.5">
+        <SMRUCampusWorldMap isWalkMode={isWalkMode} allowedLocationIds={isCartMode ? undefined : modeConfig?.locationIds} language={selectedLanguage.language} />
+        <div className="panel-soft p-4 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <div className="text-base font-black tracking-tight text-slate-900">{getModeLabel(activeMode)}</div>
+              <div className="mt-1 text-[0.95rem] text-slate-600">
+                {isCartMode
+                  ? 'GPS triggers each stop automatically during vehicle route.'
+                  : isWalkMode
+                    ? 'GPS triggers nearby points automatically while you move.'
+                    : 'Tap any point to open details and audio.'}
+              </div>
+            </div>
+            <div className="status-chip">
               Duration: {modeConfig?.durationMinutes ?? '--'} min
             </div>
           </div>
-          <div className="mt-1 text-xs text-slate-500">Active points: {isCartMode ? 'All active map points' : modeConfig?.locationIds.length ?? 0}</div>
+          <div className="mt-2 text-sm text-slate-600">Active points: {isCartMode ? 'All active map points' : modeConfig?.locationIds.length ?? 0}</div>
           {modeNotice ? (
-            <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+            <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
               {modeNotice}
             </div>
           ) : null}
         </div>
+        <MapLegend />
+        
+        <NavigationInstructionCard />
 
         {isCartMode ? (
-          <CartModePanel allowedLocationIds={undefined} language={selectedLanguage} />
+          <CartModePanel allowedLocationIds={undefined} language={selectedLanguage.language} />
         ) : isWalkMode ? (
-          <WalkWithMePanel allowedLocationIds={modeConfig?.locationIds} language={selectedLanguage} />
+          <WalkWithMePanel allowedLocationIds={modeConfig?.locationIds} language={selectedLanguage.language} />
         ) : (
-          <ManualExplorePanel allowedLocationIds={modeConfig?.locationIds} language={selectedLanguage} />
+          <ManualExplorePanel allowedLocationIds={modeConfig?.locationIds} language={selectedLanguage.language} />
         )}
       </div>
       <CampusMapBottomSheet />
-      <MiniAudioPlayer />
+      <StickyAudioControlBar />
+      <NearbyPointAutoOpen />
     </>
   );
 }

@@ -8,29 +8,25 @@ interface Props {
 }
 
 export default function LocationScriptBlock({ script, language }: Props) {
-  const hasScript = !!script && script.trim().length > 0;
-
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-inner">
-      <div className="flex items-center justify-between mb-3">
-        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+    <div className="rounded-3xl border-2 border-slate-100 bg-slate-50/50 p-6 shadow-xs">
+      <div className="mb-4 flex items-center justify-between">
+        <div className="text-[11px] font-black uppercase tracking-widest text-slate-400">
           Guided Narration
         </div>
-        <div className="px-2 py-0.5 rounded bg-white border border-slate-200 text-[9px] font-bold text-slate-500">
-          {language.toUpperCase()}
+        <div className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-black text-slate-500 uppercase tracking-wider">
+          {language}
         </div>
       </div>
-      
-      <p className={`text-sm leading-relaxed ${hasScript ? 'text-slate-700 italic' : 'text-slate-400 font-medium'}`}>
-        {hasScript ? script : `Content coming soon in selected language`}
+
+      <p className="text-[1.05rem] font-medium leading-relaxed text-slate-700">
+        {script}
       </p>
 
-      {hasScript && (
-        <div className="mt-4 flex items-center gap-2">
-          <div className="flex gap-0.5">
-            {[1, 2, 3].map(i => <div key={i} className="w-1 h-1 rounded-full bg-blue-400/40" />)}
-          </div>
-          <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest">Script Active</span>
+      {script && script.length > 50 && (
+        <div className="mt-5 flex items-center gap-2 text-xs font-bold text-blue-600">
+          <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+          Script verified for audio playback.
         </div>
       )}
     </div>

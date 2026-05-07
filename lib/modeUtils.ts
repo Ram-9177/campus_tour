@@ -15,8 +15,8 @@ export function tourModeToQueryMode(mode: AppTourMode): string {
 }
 
 export function getModeLabel(mode: AppTourMode): string {
-  if (mode === 'walk_with_me') return 'Walk With Me';
-  if (mode === 'campus_cart') return 'Campus Cart';
+  if (mode === 'walk_with_me') return 'Own Vehicle / Walk Tour';
+  if (mode === 'campus_cart') return 'Buggy / Campus Vehicle Tour';
   if (mode === 'virtual_tour') return 'Virtual Tour';
   return 'Manual Explore';
 }

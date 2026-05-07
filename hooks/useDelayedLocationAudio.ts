@@ -4,10 +4,12 @@ import { useEffect, useRef } from 'react';
 import mediaSync from '@/lib/mediaSyncEngine';
 import audioEngine from '@/lib/audioGuideEngine';
 import type { CampusLocation } from '@/types/campusLocation';
+import { useTourSession } from '@/hooks/useTourSession';
 
 export function useDelayedLocationAudio() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const lastLocationIdRef = useRef<string | null>(null);
+  const { session } = useTourSession();
 
   useEffect(() => {
     const unsub = mediaSync.subscribe((loc?: CampusLocation | null) => {
@@ -28,8 +30,6 @@ export function useDelayedLocationAudio() {
       }
       lastLocationIdRef.current = loc.id;
 
-      // Pre-load the location immediately (so it's ready)
-      audioEngine.loadLocation(loc);
       if (!audioEngine.getState().isAvailable) {
         return;
       }
@@ -41,7 +41,9 @@ export function useDelayedLocationAudio() {
           timerRef.current = null;
           return;
         }
-        audioEngine.play();
+        if (session?.audioStarted) {
+          void audioEngine.play();
+        }
         timerRef.current = null;
       }, 2000);
     });
@@ -50,5 +52,5 @@ export function useDelayedLocationAudio() {
       unsub();
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, []);
+  }, [session?.audioStarted]);
 }

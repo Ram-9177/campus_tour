@@ -20,7 +20,7 @@ export default function AdminLocationFilters({
   status, setStatus 
 }: AdminLocationFiltersProps) {
   return (
-    <div className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6">
+    <div className="mb-6 space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
       <div className="flex flex-col md:flex-row gap-3">
         <div className="flex-1">
           <input
@@ -28,14 +28,14 @@ export default function AdminLocationFilters({
             placeholder="Search by name or slug..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500 text-sm"
+            className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-base focus:outline-hidden focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div className="flex gap-2">
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="h-11 px-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-hidden"
+            className="h-12 rounded-xl border border-slate-200 bg-white px-3 text-base focus:outline-hidden"
           >
             <option value="all">All Categories</option>
             {CATEGORIES.map(cat => (
@@ -45,7 +45,7 @@ export default function AdminLocationFilters({
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="h-11 px-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-hidden"
+            className="h-12 rounded-xl border border-slate-200 bg-white px-3 text-base focus:outline-hidden"
           >
             <option value="all">All Status</option>
             <option value="active">Active Only</option>

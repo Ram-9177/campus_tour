@@ -1,0 +1,60 @@
+{
+  "main-gate-entrance": {
+    "category": "gate",
+    "radiusMeters": 35,
+    "routeOrder": 1,
+    "name": {
+      "en": "Main Gate",
+      "te": "ప్రధాన ద్వారం",
+      "hi": "मुख्य द्वार"
+    },
+    "description": {
+      "en": "The iconic entrance to St. Mary's University, representing our commitment to excellence.",
+      "te": "",
+      "hi": ""
+    },
+    "script": {
+      "en": "Welcome to St. Mary's University. You are standing at the Main Gate.",
+      "te": "",
+      "hi": ""
+    },
+    "audio": {
+      "en": "/audio/locations/main-gate-en.mp3",
+      "te": "",
+      "hi": ""
+    },
+    "contentVariants": {
+      "physical": {
+        "description": { "en": "The main entrance point for visitors.", "te": "", "hi": "" },
+        "script": { "en": "As you enter through these gates, notice the architectural heritage of SMRU.", "te": "", "hi": "" },
+        "audio": { "en": "", "te": "", "hi": "" }
+      },
+      "virtual": {
+        "description": { "en": "Start your virtual journey here.", "te": "", "hi": "" },
+        "script": { "en": "Experience the grandeur of the SMRU entrance from anywhere in the world.", "te": "", "hi": "" },
+        "audio": { "en": "", "te": "", "hi": "" }
+      },
+      "buggy": {
+        "description": { "en": "Pick-up point for campus vehicle tours.", "te": "", "hi": "" },
+        "script": { "en": "Please wait here for the next campus cart to begin your guided tour.", "te": "", "hi": "" },
+        "audio": { "en": "", "te": "", "hi": "" }
+      }
+    },
+    "images": [
+      "/images/locations/main-gate-1.jpg"
+    ],
+    "videos": [],
+    "virtual360Url": "",
+    "uspTags": ["Heritage", "Secure Campus"],
+    "parentTrustPoints": ["24/7 Security", "Controlled Access"],
+    "studentHighlights": ["Iconic Photo Spot", "Meeting Point"],
+    "admissionsCta": {
+      "applyUrl": "https://smru.edu.in/apply",
+      "brochureUrl": "",
+      "whatsappUrl": "",
+      "counsellorText": "Talk to an Admissions Officer"
+    },
+    "recommendedFor": ["parent", "student", "consultant", "other"],
+    "active": true
+  }
+}

@@ -1,11 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import audioEngine from '@/lib/audioGuideEngine';
 import BrandLogo from '@/components/layout/BrandLogo';
 import { smruMapConfig } from '@/data/map/smruMapConfig';
 import { calculateDistance } from '@/lib/mapUtils';
 import { getBestLocationFix } from '@/lib/locationFix';
 
-interface WelcomeStepProps { onNext: (locationAccess: 'inside' | 'outside') => void; }
+interface WelcomeStepProps {
+  onStart: () => void;
+  onNext: (locationAccess: 'inside' | 'outside') => void;
+}
 
 const OUTSIDE_CAMPUS_LIMIT_METERS = 1000;
 
@@ -20,12 +23,10 @@ function distanceFromCampusBoundsMeters(lat: number, lng: number): number {
   return calculateDistance({ lat, lng }, { lat: clampedLat, lng: clampedLon }) * 1000;
 }
 
-export default function WelcomeStep({ onNext }: WelcomeStepProps) {
+export default function WelcomeStep({ onStart, onNext }: WelcomeStepProps) {
   const [isCheckingLocation, setIsCheckingLocation] = useState(false);
   const [locationNote, setLocationNote] = useState<string | null>(null);
-  const [allowManualVirtual, setAllowManualVirtual] = useState(false);
-  const [resolvedAccess, setResolvedAccess] = useState<'inside' | 'outside' | null>(null);
-  const [hasAutoRequested, setHasAutoRequested] = useState(false);
+  const [showPermissionGate, setShowPermissionGate] = useState(false);
 
   const requestLocationPermission = async (): Promise<'inside' | 'outside' | null> => {
     const fix = await getBestLocationFix({ desiredAccuracyMeters: 35, timeoutMs: 18000 });
@@ -33,11 +34,10 @@ export default function WelcomeStep({ onNext }: WelcomeStepProps) {
       if (fix.error === 'unsupported') {
         setLocationNote('GPS is not available in this browser. Enable location support or continue in Virtual mode.');
       } else if (fix.error === 'permission_denied') {
-        setLocationNote('Location permission is blocked. Allow location for this site and tap Start again.');
+        setLocationNote('Location permission is blocked. Allow location for this site, or continue without location.');
       } else {
-        setLocationNote('Could not capture accurate GPS. Move outdoors, turn on precise location, and tap Start again.');
+        setLocationNote('Could not capture accurate GPS. Move outdoors, turn on precise location, or continue without location.');
       }
-      setAllowManualVirtual(true);
       return null;
     }
 
@@ -48,14 +48,10 @@ export default function WelcomeStep({ onNext }: WelcomeStepProps) {
 
     if (isInsideOrNear) {
       setLocationNote(`Location captured (±${Math.round(accuracy)}m). Full tour modes unlocked.`);
-      setAllowManualVirtual(false);
-      setResolvedAccess('inside');
       return 'inside';
     }
 
     setLocationNote(`You are ~${(outsideDistance / 1000).toFixed(1)} km outside campus (±${Math.round(accuracy)}m). Virtual mode only.`);
-    setAllowManualVirtual(false);
-    setResolvedAccess('outside');
     return 'outside';
   };
 
@@ -63,86 +59,86 @@ export default function WelcomeStep({ onNext }: WelcomeStepProps) {
     setIsCheckingLocation(true);
     const locationAccess = await requestLocationPermission();
     setIsCheckingLocation(false);
+    if (locationAccess) {
+      onNext(locationAccess);
+    }
     return locationAccess;
   };
 
-  useEffect(() => {
-    if (hasAutoRequested) return;
-    setHasAutoRequested(true);
-    void handleRequestLocation();
-  }, [hasAutoRequested]);
-
-  const handleNext = async () => {
+  const handleStart = () => {
     audioEngine.registerUserGesture();
-    if (resolvedAccess) {
-      onNext(resolvedAccess);
-      return;
-    }
-    const locationAccess = await handleRequestLocation();
-    if (!locationAccess) return;
-    onNext(locationAccess);
+    onStart();
+    setShowPermissionGate(true);
+  };
+
+  const handleContinueWithoutLocation = () => {
+    onNext('outside');
   };
 
   return (
-    <section className="glass rounded-[2rem] p-6 text-center shadow-[0_24px_60px_-36px_rgba(15,23,42,0.38)] animate-in sm:p-8 lg:p-10">
-      <div className="relative mb-8 flex justify-center sm:mb-10">
-        <div className="absolute inset-0 rounded-full bg-blue-100/50 blur-3xl scale-150 animate-pulse-soft" />
+    <section className="mx-auto flex w-full max-w-xl flex-col items-center rounded-4xl border border-slate-200 bg-white p-6 text-center shadow-[0_24px_60px_-36px_rgba(15,23,42,0.2)] sm:p-8 lg:p-10">
+      <div className="relative mb-6 flex justify-center sm:mb-8">
+        <div className="absolute inset-0 rounded-full bg-blue-100/50 blur-3xl scale-150" />
         <div className="relative inline-flex h-28 w-28 items-center justify-center rounded-3xl border border-[#bfd2f8] bg-white shadow-sm sm:h-32 sm:w-32">
           <BrandLogo className="h-18 w-auto object-contain sm:h-20" />
         </div>
       </div>
 
-      <div className="mb-10 space-y-3 sm:mb-12">
-        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600 animate-in delay-100">
-          PWA Campus Guide
-        </p>
-        <h1 className="text-3xl font-black tracking-tight text-slate-900 animate-in delay-200 sm:text-4xl lg:text-5xl">
-          Welcome to <br /> St. Mary&apos;s University
-        </h1>
-        <p className="mx-auto max-w-[20rem] text-sm leading-relaxed text-slate-500 animate-in delay-300 sm:max-w-[24rem] sm:text-[0.98rem]">
-          Start your smart campus tour with location-aware guidance, directions, media, and virtual exploration.
+      <div className="mb-8 space-y-3 sm:mb-10">
+        <p className="text-[11px] font-black uppercase tracking-[0.28em] text-blue-600">SMRU Campus Guide</p>
+        <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">Welcome to St. Mary&apos;s University</h1>
+        <p className="mx-auto max-w-[24rem] text-base leading-relaxed text-slate-600 sm:text-[1.03rem]">
+          Start your campus tour. We&apos;ll ask for location only after you choose to continue.
         </p>
       </div>
 
-      <div className="space-y-5 animate-in delay-300 sm:space-y-6">
-        {!resolvedAccess ? (
+      {!showPermissionGate ? (
+        <div className="w-full space-y-4">
+          <button
+            type="button"
+            onClick={handleStart}
+            className="flex h-14 w-full items-center justify-center rounded-2xl bg-[#0b57d0] px-5 text-lg font-bold text-white shadow-[0_18px_36px_-18px_rgba(11,87,208,0.75)] transition-transform active:scale-[0.99]"
+          >
+            Start Tour
+          </button>
+          <p className="text-sm text-slate-500">No login. No personal data. No GPS until you tap Start Tour.</p>
+        </div>
+      ) : (
+        <div className="w-full space-y-4">
+          <div className="rounded-2xl bg-slate-50 px-4 py-4 text-left">
+            <p className="text-base font-semibold text-slate-900">Choose how you want to continue</p>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              Allow location for guided campus features, or continue without location for Virtual Tour.
+            </p>
+          </div>
+
           <button
             type="button"
             onClick={() => {
               void handleRequestLocation();
             }}
             disabled={isCheckingLocation}
-            className="w-full rounded-xl border border-blue-300 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-70"
+            className="flex h-14 w-full items-center justify-center rounded-2xl bg-[#0b57d0] px-5 text-lg font-bold text-white shadow-[0_18px_36px_-18px_rgba(11,87,208,0.75)] transition-transform active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isCheckingLocation ? 'Requesting Location Permission...' : 'Allow Location Access'}
+            {isCheckingLocation ? 'Checking Location...' : 'Allow Location'}
           </button>
-        ) : null}
-        <button
-          type="button"
-          onClick={handleNext}
-          disabled={isCheckingLocation}
-          className="btn-premium w-full group"
-        >
-          <span>{isCheckingLocation ? 'Checking Location...' : 'Start'}</span>
-          <span className="transition-transform group-hover:translate-x-1">{isCheckingLocation ? '…' : '→'}</span>
-        </button>
-        {locationNote ? <p className="text-xs text-slate-500">{locationNote}</p> : null}
-        {allowManualVirtual ? (
+
           <button
             type="button"
-            onClick={() => onNext('outside')}
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            onClick={handleContinueWithoutLocation}
+            className="flex h-14 w-full items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 text-lg font-semibold text-slate-800 transition-colors hover:bg-slate-50"
           >
-            Continue With Virtual Mode
+            Continue Without Location / Virtual Tour
           </button>
-        ) : null}
 
-        <div className="flex items-center justify-center gap-4 grayscale opacity-40">
-          <span className="text-[10px] font-bold uppercase tracking-widest">No Login</span>
-          <div className="h-1 w-1 rounded-full bg-slate-400" />
-          <span className="text-[10px] font-bold uppercase tracking-widest">Works Offline</span>
+          {locationNote ? <p className="rounded-2xl bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">{locationNote}</p> : null}
+          <div className="flex items-center justify-center gap-4 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+            <span>No Login</span>
+            <span className="h-1 w-1 rounded-full bg-slate-300" />
+            <span>No Location History</span>
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }

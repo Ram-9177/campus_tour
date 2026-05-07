@@ -8,8 +8,8 @@ const STORAGE_KEY = 'smru_mode_experience_config';
 
 const MODE_LABELS: Record<AppTourMode, string> = {
   manual_explore: 'Manual Explore',
-  walk_with_me: 'Walk With Me',
-  campus_cart: 'Campus Cart',
+  walk_with_me: 'Own Vehicle / Walk Tour',
+  campus_cart: 'Buggy / Campus Vehicle Tour',
   virtual_tour: 'Virtual Tour',
 };
 

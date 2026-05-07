@@ -1,90 +1,92 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { CircleMarker, Tooltip, useMap } from 'react-leaflet';
+import L from 'leaflet';
 import { LocationStore } from '@/lib/locationStore';
+import mediaSync from '@/lib/mediaSyncEngine';
 import type { CampusLocation } from '@/types/campusLocation';
 
 interface Props {
-  selectedId?: string | null;
-  onSelect?: (id: string) => void;
-  debug?: boolean;
   allowedLocationIds?: string[];
+  language: 'en' | 'te' | 'hi';
 }
 
-export default function CampusPointLayer({ selectedId, onSelect, debug = false, allowedLocationIds }: Props) {
+export default function CampusPointLayer({ allowedLocationIds, language }: Props) {
+  const map = useMap();
   const [locations, setLocations] = useState<CampusLocation[]>([]);
-
-  const fetchLocations = () => {
-    const allowed = allowedLocationIds && allowedLocationIds.length > 0 ? new Set(allowedLocationIds) : null;
-    const data = LocationStore.getAllLocations().filter((loc) => loc.active && (!allowed || allowed.has(loc.id)));
-    setLocations(data);
-  };
+  const [currentLocation, setCurrentLocation] = useState<CampusLocation | null>(mediaSync.getCurrent());
 
   useEffect(() => {
-    fetchLocations();
-    window.addEventListener('smru_locations_updated', fetchLocations);
-    return () => window.removeEventListener('smru_locations_updated', fetchLocations);
-  }, [allowedLocationIds?.join('|')]);
+    const load = () => {
+      let all = LocationStore.getAllLocations().filter(l => l.active);
+      if (allowedLocationIds && allowedLocationIds.length > 0) {
+        all = all.filter(l => allowedLocationIds.includes(l.id));
+      }
+      setLocations(all);
+    };
+    load();
+    window.addEventListener('smru_locations_updated', load);
+    const unsub = mediaSync.subscribe((loc) => setCurrentLocation(loc || null));
+    return () => {
+      window.removeEventListener('smru_locations_updated', load);
+      unsub();
+    };
+  }, [allowedLocationIds]);
+
+  const handlePointClick = (loc: CampusLocation) => {
+    mediaSync.setCurrentByLocationId(loc.id);
+    map.flyTo([loc.latitude, loc.longitude], 18, {
+      duration: 1.5
+    });
+  };
 
   return (
-    <g data-layer="campus-points">
-      {locations.map((marker) => {
-        const targetId = marker.mapPointId || marker.id;
-        const isSelected = selectedId === targetId;
-        
+    <>
+      {locations.map((loc) => {
+        const isSelected = currentLocation?.id === loc.id;
+        const pos: [number, number] = [loc.latitude, loc.longitude];
+
         return (
-          <g
-            key={marker.id}
-            transform={`translate(${marker.x || 0}, ${marker.y || 0})`}
-            onClick={() => onSelect?.(targetId)}
-            className="cursor-pointer group"
-          >
-            {/* Shadow/Backdrop */}
-            <circle r={isSelected ? 18 : 14} fill="white" className="opacity-90 shadow-lg" />
-            
-            {/* Main Pin (Blue) */}
-            <circle
-              r={isSelected ? 16 : 12}
-              fill={isSelected ? '#2563eb' : '#3b82f6'}
-              className="transition-all duration-300"
-            />
-            
-            {/* Pulse Effect */}
+          <React.Fragment key={loc.id}>
+            {/* Animated Glow for Selected Pin */}
             {isSelected && (
-              <circle r={24} fill="none" stroke="#2563eb" strokeWidth="2" className="animate-ping opacity-30" />
+              <CircleMarker
+                center={pos}
+                radius={15}
+                pathOptions={{
+                  color: '#3b82f6', // blue-500
+                  fillColor: '#3b82f6',
+                  fillOpacity: 0.2,
+                  weight: 0,
+                  className: 'animate-pulse'
+                }}
+              />
             )}
 
-            {/* Icon/Label */}
-            <text
-              textAnchor="middle"
-              className="pointer-events-none fill-white text-[10px] font-bold select-none"
-              dy=".35em"
+            <CircleMarker
+              center={pos}
+              radius={isSelected ? 10 : 7}
+              eventHandlers={{
+                click: () => handlePointClick(loc)
+              }}
+              pathOptions={{
+                color: '#fff',
+                weight: 2,
+                fillColor: isSelected ? '#1d4ed8' : '#3b82f6', // blue-700 : blue-500
+                fillOpacity: 1,
+                className: 'cursor-pointer transition-all duration-300'
+              }}
             >
-              📍
-            </text>
-
-            {/* Name Label */}
-            <text
-              y="32"
-              textAnchor="middle"
-              className={`pointer-events-none text-[11px] font-bold transition-all ${isSelected ? 'fill-blue-700' : 'fill-slate-700'}`}
-            >
-              {marker.name.en}
-            </text>
-
-            {/* Debug Info */}
-            {debug && (
-              <text
-                y="-20"
-                textAnchor="middle"
-                className="text-[8px] font-mono fill-red-500 opacity-0 group-hover:opacity-100"
-              >
-                ID: {marker.id}
-              </text>
-            )}
-          </g>
+              <Tooltip direction="top" offset={[0, -10]} opacity={1} permanent={isSelected}>
+                <div className="px-2 py-1 font-black text-[10px] uppercase tracking-wider text-slate-800">
+                  {loc.name[language] || loc.name.en}
+                </div>
+              </Tooltip>
+            </CircleMarker>
+          </React.Fragment>
         );
       })}
-    </g>
+    </>
   );
 }

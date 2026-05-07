@@ -1,5 +1,6 @@
 import type { CampusLocation } from '@/types/campusLocation';
 import { campusLocations as initialLocations } from '@/data/campusLocations';
+import { validateLocationCollection } from '@/lib/locationValidation';
 
 const STORAGE_KEY = 'smru_campus_locations';
 
@@ -12,51 +13,44 @@ export class LocationStore {
     if (!this.getIsClient()) return initialLocations;
 
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) {
-      // Initialize with default data if empty
-      console.log('[LocationStore] Initializing localStorage with', initialLocations.length, 'locations');
-      this.saveToStorage(initialLocations);
-      return initialLocations;
-    }
+    if (!stored) return initialLocations;
 
     try {
       const parsed = JSON.parse(stored);
-      if (!Array.isArray(parsed)) {
-        throw new Error('Stored locations payload is not an array');
-      }
+      if (!Array.isArray(parsed)) throw new Error('Invalid format');
 
-      // Auto-heal stale empty cache after map seed changes.
-      // This keeps points visible when source files are replaced.
-      if (parsed.length === 0 && initialLocations.length > 0) {
-        console.log('[LocationStore] Empty cache detected; reseeding with', initialLocations.length, 'locations');
-        this.saveToStorage(initialLocations);
-        return initialLocations;
-      }
+      // Migration & Normalization
+      const normalized = parsed.map((loc: any) => {
+        const DEFAULT_I18N = { en: '', te: '', hi: '' };
+        
+        // Ensure contentVariants exist
+        const variants = loc.contentVariants || {
+          physical: { description: loc.description || DEFAULT_I18N, script: loc.script || DEFAULT_I18N, audio: loc.audio || DEFAULT_I18N },
+          virtual: { description: loc.description || DEFAULT_I18N, script: loc.script || DEFAULT_I18N, audio: loc.audio || DEFAULT_I18N },
+          buggy: { description: loc.description || DEFAULT_I18N, script: loc.script || DEFAULT_I18N, audio: loc.audio || DEFAULT_I18N },
+        };
 
-      // Backfill legacy cached records with default media assets from current seed.
-      const seedById = new Map(initialLocations.map((loc) => [loc.id, loc]));
-      const normalized = parsed.map((loc: CampusLocation) => {
-        const seed = seedById.get(loc?.id);
-        const hasEnoughImages = Array.isArray(loc?.images) && loc.images.length >= 2;
-        const hasVideo = Array.isArray(loc?.videos) && loc.videos.length >= 1;
-        if (!seed) return loc;
         return {
           ...loc,
-          images: hasEnoughImages ? loc.images : seed.images,
-          videos: hasVideo ? loc.videos : seed.videos,
-        } as CampusLocation;
-      });
+          name: loc.name || DEFAULT_I18N,
+          description: loc.description || DEFAULT_I18N,
+          script: loc.script || DEFAULT_I18N,
+          audio: loc.audio || DEFAULT_I18N,
+          contentVariants: variants,
+          uspTags: Array.isArray(loc.uspTags) ? loc.uspTags : [],
+          parentTrustPoints: Array.isArray(loc.parentTrustPoints) ? loc.parentTrustPoints : [],
+          studentHighlights: Array.isArray(loc.studentHighlights) ? loc.studentHighlights : [],
+          images: Array.isArray(loc.images) ? loc.images : [],
+          videos: Array.isArray(loc.videos) ? loc.videos : [],
+          active: typeof loc.active === 'boolean' ? loc.active : true,
+          routeOrder: typeof loc.routeOrder === 'number' ? loc.routeOrder : 0,
+          radiusMeters: typeof loc.radiusMeters === 'number' ? loc.radiusMeters : 30,
+        };
+      }) as CampusLocation[];
 
-      const normalizedChanged = JSON.stringify(normalized) !== JSON.stringify(parsed);
-      if (normalizedChanged) {
-        this.saveToStorage(normalized);
-      }
-
-      console.log('[LocationStore] Loaded', normalized.length, 'locations from localStorage');
       return normalized;
     } catch (e) {
-      console.error('Failed to parse locations from storage', e);
-      console.log('[LocationStore] Falling back to initial locations:', initialLocations.length);
+      console.warn('LocationStore: Failed to parse stored locations, falling back to seed.', e);
       return initialLocations;
     }
   }
@@ -69,27 +63,22 @@ export class LocationStore {
     return this.getAllLocations().find(loc => loc.slug === slug);
   }
 
-
   static createLocation(location: Omit<CampusLocation, 'id' | 'createdAt' | 'updatedAt'>): CampusLocation {
     const locations = this.getAllLocations();
     const now = new Date().toISOString();
-    
     const newLocation: CampusLocation = {
       ...location,
       id: `loc-${Date.now()}`,
       createdAt: now,
       updatedAt: now,
     };
-
-    const updated = [...locations, newLocation];
-    this.saveToStorage(updated);
+    this.saveAll([...locations, newLocation]);
     return newLocation;
   }
 
   static updateLocation(id: string, updates: Partial<CampusLocation>): CampusLocation | undefined {
     const locations = this.getAllLocations();
     const index = locations.findIndex(loc => loc.id === id);
-    
     if (index === -1) return undefined;
 
     const updatedLocation: CampusLocation = {
@@ -100,39 +89,34 @@ export class LocationStore {
 
     const updated = [...locations];
     updated[index] = updatedLocation;
-    this.saveToStorage(updated);
+    this.saveAll(updated);
     return updatedLocation;
   }
 
   static deleteLocation(id: string): boolean {
     const locations = this.getAllLocations();
     const filtered = locations.filter(loc => loc.id !== id);
-    
     if (filtered.length === locations.length) return false;
-
-    this.saveToStorage(filtered);
+    this.saveAll(filtered);
     return true;
   }
 
-  static toggleLocationActive(id: string): boolean {
-    const location = this.getLocationById(id);
-    if (!location) return false;
-    
-    this.updateLocation(id, { active: !location.active });
-    return true;
-  }
-
-  static importLocations(jsonString: string): boolean {
+  static importLocations(jsonString: string): { success: boolean; error?: string } {
     try {
       const parsed = JSON.parse(jsonString);
-      if (Array.isArray(parsed)) {
-        this.saveToStorage(parsed);
-        return true;
+      const data = Array.isArray(parsed) ? parsed : (parsed.locations || null);
+      if (!data) return { success: false, error: 'JSON must be an array or contain a locations array.' };
+      
+      // Backup before overwrite
+      const current = localStorage.getItem(STORAGE_KEY);
+      if (current) {
+        localStorage.setItem(`${STORAGE_KEY}_backup_${Date.now()}`, current);
       }
-      return false;
+
+      this.saveAll(data);
+      return { success: true };
     } catch (e) {
-      console.error('Import failed', e);
-      return false;
+      return { success: false, error: 'Invalid JSON format' };
     }
   }
 
@@ -141,14 +125,30 @@ export class LocationStore {
   }
 
   static saveAll(locations: CampusLocation[]): void {
-    if (this.getIsClient()) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(locations));
-      // Dispatch a custom event so other components can react to storage changes
-      window.dispatchEvent(new Event('smru_locations_updated'));
-    }
+    if (!this.getIsClient()) return;
+    const payload = JSON.stringify(locations);
+    localStorage.setItem(STORAGE_KEY, payload);
+    window.dispatchEvent(new Event('smru_locations_updated'));
   }
 
-  private static saveToStorage(locations: CampusLocation[]): void {
-    this.saveAll(locations);
+  static resetToDefaultSeed(): void {
+    if (!this.getIsClient()) return;
+    // Backup before destructive reset
+    const current = localStorage.getItem(STORAGE_KEY);
+    if (current) localStorage.setItem(`${STORAGE_KEY}_backup_${Date.now()}`, current);
+    
+    localStorage.removeItem(STORAGE_KEY);
+    window.dispatchEvent(new Event('smru_locations_updated'));
+  }
+
+  static clearLocalOverrides(): void {
+    this.resetToDefaultSeed();
+  }
+
+  static toggleLocationActive(id: string): boolean {
+    const loc = this.getLocationById(id);
+    if (!loc) return false;
+    this.updateLocation(id, { active: !loc.active });
+    return true;
   }
 }

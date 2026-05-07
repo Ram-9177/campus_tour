@@ -1,18 +1,22 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { CampusLocation } from '@/types/campusLocation';
 import type { AppUserType } from '@/types/appRules';
 import LocationBasicInfoForm from './LocationBasicInfoForm';
 import LocationCoordinateForm from './LocationCoordinateForm';
 import LocationRadiusForm from './LocationRadiusForm';
 import LocationContentEditor from './LocationContentEditor';
+import LocationVariantEditor from './LocationVariantEditor';
+import LocationAdmissionsForm from './LocationAdmissionsForm';
 import LocationMapPreview from './LocationMapPreview';
 import { validateLocation } from '@/lib/locationValidation';
+import { LocationStore } from '@/lib/locationStore';
 
 interface LocationFormProps {
   initialData?: Partial<CampusLocation>;
-  onSave: (data: CampusLocation) => void;
+  onSave: (data: CampusLocation) => CampusLocation | void;
+  onSaveAndStay?: (data: CampusLocation) => CampusLocation | void;
   onCancel: () => void;
   title: string;
 }
@@ -24,18 +28,100 @@ const USER_TYPES: { value: AppUserType; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
-export default function LocationForm({ initialData, onSave, onCancel, title }: LocationFormProps) {
-  const [formData, setFormData] = useState<Partial<CampusLocation>>(initialData || {
+const DEFAULT_I18N_TEXT: CampusLocation['name'] = { en: '', te: '', hi: '' };
+const DEFAULT_I18N_MEDIA: CampusLocation['audio'] = { en: '', te: '', hi: '' };
+
+function createInitialFormData(initialData?: Partial<CampusLocation>): Partial<CampusLocation> {
+  const defaults: Partial<CampusLocation> = {
     active: true,
     recommendedFor: ['student', 'parent'],
+    routeOrder: 1,
+    radiusMeters: 20,
+    name: DEFAULT_I18N_TEXT,
     images: [],
     videos: [],
-    audio: { en: '', te: '', hi: '' },
-    description: { en: '', te: '', hi: '' },
-    script: { en: '', te: '', hi: '' },
-  });
+    audio: DEFAULT_I18N_MEDIA,
+    description: DEFAULT_I18N_TEXT,
+    script: DEFAULT_I18N_TEXT,
+    contentVariants: {
+      physical: { description: DEFAULT_I18N_TEXT, script: DEFAULT_I18N_TEXT, audio: DEFAULT_I18N_MEDIA },
+      virtual: { description: DEFAULT_I18N_TEXT, script: DEFAULT_I18N_TEXT, audio: DEFAULT_I18N_MEDIA },
+      buggy: { description: DEFAULT_I18N_TEXT, script: DEFAULT_I18N_TEXT, audio: DEFAULT_I18N_MEDIA },
+    },
+    uspTags: [],
+    parentTrustPoints: [],
+    studentHighlights: [],
+    admissionsCta: { applyUrl: '', brochureUrl: '', whatsappUrl: '', counsellorText: '' }
+  };
+
+  if (!initialData) return defaults;
+
+  return {
+    ...defaults,
+    ...initialData,
+    name: {
+      en: initialData.name?.en ?? '',
+      te: initialData.name?.te ?? '',
+      hi: initialData.name?.hi ?? '',
+    },
+    description: {
+      en: initialData.description?.en ?? '',
+      te: initialData.description?.te ?? '',
+      hi: initialData.description?.hi ?? '',
+    },
+    script: {
+      en: initialData.script?.en ?? '',
+      te: initialData.script?.te ?? '',
+      hi: initialData.script?.hi ?? '',
+    },
+    audio: {
+      en: initialData.audio?.en ?? '',
+      te: initialData.audio?.te ?? '',
+      hi: initialData.audio?.hi ?? '',
+    },
+    contentVariants: {
+      physical: initialData.contentVariants?.physical || { description: DEFAULT_I18N_TEXT, script: DEFAULT_I18N_TEXT, audio: DEFAULT_I18N_MEDIA },
+      virtual: initialData.contentVariants?.virtual || { description: DEFAULT_I18N_TEXT, script: DEFAULT_I18N_TEXT, audio: DEFAULT_I18N_MEDIA },
+      buggy: initialData.contentVariants?.buggy || { description: DEFAULT_I18N_TEXT, script: DEFAULT_I18N_TEXT, audio: DEFAULT_I18N_MEDIA },
+    },
+    images: Array.isArray(initialData.images) ? initialData.images : defaults.images,
+    videos: Array.isArray(initialData.videos) ? initialData.videos : defaults.videos,
+    uspTags: initialData.uspTags || [],
+    parentTrustPoints: initialData.parentTrustPoints || [],
+    studentHighlights: initialData.studentHighlights || [],
+    admissionsCta: initialData.admissionsCta || defaults.admissionsCta,
+    recommendedFor:
+      Array.isArray(initialData.recommendedFor) && initialData.recommendedFor.length > 0
+        ? initialData.recommendedFor
+        : defaults.recommendedFor,
+    active: typeof initialData.active === 'boolean' ? initialData.active : true,
+  };
+}
+
+export default function LocationForm({ initialData, onSave, onSaveAndStay, onCancel, title }: LocationFormProps) {
+  const initialFormData = useMemo(() => createInitialFormData(initialData), [initialData]);
+  const [formData, setFormData] = useState<Partial<CampusLocation>>(initialFormData);
+  const [activeLang, setActiveLang] = useState<'en' | 'te' | 'hi'>('en');
 
   const [errors, setErrors] = useState<{ field: string; message: string }[]>([]);
+  const baselineRef = useRef<string>(JSON.stringify(initialFormData));
+
+  useEffect(() => {
+    setFormData(initialFormData);
+    baselineRef.current = JSON.stringify(initialFormData);
+  }, [initialFormData]);
+
+  const isDirty = useMemo(() => JSON.stringify(formData) !== baselineRef.current, [formData]);
+
+  useEffect(() => {
+    if (!isDirty) return;
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
 
   const handleToggleUserType = (type: AppUserType) => {
     const current = formData.recommendedFor || [];
@@ -45,8 +131,8 @@ export default function LocationForm({ initialData, onSave, onCancel, title }: L
     setFormData({ ...formData, recommendedFor: updated });
   };
 
-  const handleSave = () => {
-    const validationErrors = validateLocation(formData);
+  const runValidation = () => {
+    const validationErrors = validateLocation(formData, LocationStore.getAllLocations());
     
     // Additional validation for script length
     ['en', 'te', 'hi'].forEach(lang => {
@@ -55,31 +141,67 @@ export default function LocationForm({ initialData, onSave, onCancel, title }: L
         validationErrors.push({ field: `script.${lang}`, message: `${lang.toUpperCase()} script exceeds 2500 characters.` });
       }
     });
+    return validationErrors;
+  };
+
+  const commitSave = (stayOnPage: boolean): CampusLocation | null => {
+    const validationErrors = runValidation();
 
     if (validationErrors.length > 0) {
       setErrors(validationErrors);
       // Scroll to top to see errors or just alert
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
+      return null;
     }
 
-    onSave(formData as CampusLocation);
+    setErrors([]);
+    const saveTarget = stayOnPage && onSaveAndStay ? onSaveAndStay : onSave;
+    const payload = formData as CampusLocation;
+    const saved = saveTarget(payload);
+    baselineRef.current = JSON.stringify(saved || payload);
+    if (saved) {
+      setFormData(saved);
+      return saved;
+    }
+    return payload;
+  };
+
+  const handleSave = () => {
+    commitSave(false);
   };
 
   const handleReset = () => {
     if (confirm('Are you sure you want to reset the form? All unsaved changes will be lost.')) {
-      setFormData(initialData || {});
+      const resetData = createInitialFormData(initialData);
+      setFormData(resetData);
+      baselineRef.current = JSON.stringify(resetData);
       setErrors([]);
     }
+  };
+
+  const handleCancel = () => {
+    if (isDirty && !confirm('You have unsaved changes. Leave this page?')) return;
+    onCancel();
   };
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-slate-900">{title}</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-bold text-slate-900">{title}</h2>
+          {isDirty ? (
+            <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-700">
+              Unsaved
+            </span>
+          ) : (
+            <span className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+              Saved
+            </span>
+          )}
+        </div>
         <div className="flex gap-2">
           <button
-            onClick={onCancel}
+            onClick={handleCancel}
             className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition"
           >
             Cancel
@@ -162,13 +284,31 @@ export default function LocationForm({ initialData, onSave, onCancel, title }: L
         </div>
       </section>
 
-      {/* Section 5: Content & Media */}
+      {/* Section 5: Default Content & Media */}
       <section className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
         <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
           <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm">5</span>
-          Media & Multilingual Content
+          Media & Default Content
         </h3>
         <LocationContentEditor data={formData} onChange={setFormData} />
+      </section>
+
+      {/* Section 6: Mode Variants */}
+      <section className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+          <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm">6</span>
+          Tour Mode Variants
+        </h3>
+        <LocationVariantEditor data={formData} onChange={setFormData} />
+      </section>
+
+      {/* Section 7: Admissions & Storytelling */}
+      <section className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+          <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm">7</span>
+          Admissions & Storytelling
+        </h3>
+        <LocationAdmissionsForm data={formData} onChange={setFormData} />
       </section>
 
       <div className="flex items-center justify-between pt-4 border-t border-slate-200">
@@ -181,16 +321,9 @@ export default function LocationForm({ initialData, onSave, onCancel, title }: L
         <div className="flex gap-3">
           <button
             onClick={() => {
-              const validationErrors = validateLocation(formData);
-              if (validationErrors.length === 0) {
-                onSave(formData as CampusLocation);
-                if (formData.slug) {
-                  window.open(`/stop/${formData.slug}`, '_blank');
-                }
-              } else {
-                setErrors(validationErrors);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }
+              const saved = commitSave(true);
+              if (!saved?.slug) return;
+              window.open(`/stop/${saved.slug}`, '_blank', 'noopener,noreferrer');
             }}
             className="px-6 py-2 rounded-xl border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition"
           >

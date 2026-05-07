@@ -9,8 +9,8 @@ type Props = {
 };
 
 export default function LocationCard({ location, language = 'en' }: Props) {
-  const description = location.description[language] || 'Content coming soon in selected language';
-  const script = location.script[language] || 'Content coming soon in selected language';
+  const description = location.description[language] || 'Content coming soon in selected language.';
+  const script = location.script[language] || 'Content coming soon in selected language.';
 
   const [audioState, setAudioState] = React.useState(audioEngine.getState());
 

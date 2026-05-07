@@ -27,7 +27,6 @@ export default function AudioGuidePlayer() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Navigation */}
           <button 
             type="button" 
             onClick={() => mediaSync.prev()} 
@@ -36,7 +35,7 @@ export default function AudioGuidePlayer() {
           >
             ⏮
           </button>
-          
+
           <button 
             type="button" 
             onClick={() => mediaSync.next()} 
@@ -48,7 +47,6 @@ export default function AudioGuidePlayer() {
 
           <div className="h-6 w-px bg-slate-100 mx-1" />
 
-          {/* Audio Controls */}
           {available ? (
             <>
               {audioState.isPlaying ? (
@@ -66,6 +64,7 @@ export default function AudioGuidePlayer() {
                   <span>▶</span> {audioState.isLoading ? 'LOADING' : audioState.isPaused ? 'RESUME' : 'PLAY'}
                 </button>
               )}
+
               <button 
                 onClick={() => engine.replay()} 
                 className="h-10 w-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition active:scale-95"
@@ -76,11 +75,15 @@ export default function AudioGuidePlayer() {
             </>
           ) : (
             <div className="text-[10px] font-bold text-slate-400 uppercase bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
-              Audio Coming Soon
+              Audio coming soon
             </div>
           )}
 
-          <div className="h-6 w-px bg-slate-100 mx-1" />
+          {audioState.error ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
+              {audioState.error}
+            </div>
+          ) : null}
 
           <button 
             onClick={() => mediaSync.setCurrentByLocationId(null)} 

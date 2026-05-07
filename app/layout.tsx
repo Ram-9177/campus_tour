@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
-import smruLogo from '../SMRU Logo.png';
-
+import StickyLanguageToggle from '@/components/language/StickyLanguageToggle';
 const APP_NAME = 'SMRU Campus Tour';
 const APP_DESCRIPTION =
   'Explore SMRU Campus with an interactive mobile tour guide. Discover buildings, facilities, and amenities with offline access.';
@@ -72,8 +71,6 @@ export default function RootLayout({
           content="#1d4ed8"
           media="(prefers-color-scheme: dark)"
         />
-        <link rel="icon" href={smruLogo.src} />
-        <link rel="apple-touch-icon" href={smruLogo.src} />
         <link rel="canonical" href={APP_URL} />
         {/* PWA */}
         <link rel="manifest" href="/manifest.json" />
@@ -88,6 +85,7 @@ export default function RootLayout({
       <body className="font-sans bg-white text-slate-900">
         <PWAInstallPrompt />
         {children}
+        <StickyLanguageToggle />
       </body>
     </html>
   );

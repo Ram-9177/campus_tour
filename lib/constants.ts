@@ -27,8 +27,8 @@ export const USER_TYPES: ReadonlyArray<{ key: AppUserType; label: string }> = [
 ] as const;
 
 export const TOUR_MODES: ReadonlyArray<{ key: AppTourMode; label: string }> = [
-  { key: 'walk_with_me', label: 'Walk With Me' },
-  { key: 'campus_cart', label: 'Campus Cart' },
+  { key: 'walk_with_me', label: 'Own Vehicle / Walk Tour' },
+  { key: 'campus_cart', label: 'Buggy / Campus Vehicle Tour' },
   { key: 'manual_explore', label: 'Manual Explore' },
   { key: 'virtual_tour', label: 'Virtual Tour' },
 ] as const;

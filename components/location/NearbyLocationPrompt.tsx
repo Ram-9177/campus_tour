@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import type { CampusLocation } from '@/types/campusLocation';
 import audioEngine from '@/lib/audioGuideEngine';
 import mediaSync from '@/lib/mediaSyncEngine';
-import radiusDetectionEngine from '@/lib/radiusDetection';
+import { isUserAtPoint } from '@/lib/radiusDetection';
 
 interface NearbyLocationPromptProps {
   location: CampusLocation;
@@ -45,10 +45,6 @@ export default function NearbyLocationPrompt({
   const handleDismiss = () => {
     // Dismiss by stopping audio
     audioEngine.stop();
-  };
-
-  const handleReplay = () => {
-    radiusDetectionEngine.replayLocation(location.id);
   };
 
   const distanceText =

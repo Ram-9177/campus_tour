@@ -30,6 +30,10 @@ export default function EditLocationPage() {
     router.push('/admin/locations');
   };
 
+  const handleSaveAndStay = (data: CampusLocation) => {
+    return LocationStore.updateLocation(id, data) || data;
+  };
+
   if (!location) return <div className="p-8 text-center">Loading location data...</div>;
 
   return (
@@ -39,6 +43,7 @@ export default function EditLocationPage() {
           title="Edit Location"
           initialData={location}
           onSave={handleSave}
+          onSaveAndStay={handleSaveAndStay}
           onCancel={() => router.push('/admin/locations')}
         />
       </div>

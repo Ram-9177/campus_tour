@@ -1,71 +1,90 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { campusLocations } from '@/data/campusLocations';
-import { getCategories, filterByCategory } from '@/lib/locationSearch';
+import { LocationStore } from '@/lib/locationStore';
 import mediaSync from '@/lib/mediaSyncEngine';
 import audioEngine from '@/lib/audioGuideEngine';
+import type { CampusLocation } from '@/types/campusLocation';
 import VirtualLocationPanel from './VirtualLocationPanel';
 import { useSelectedLanguage } from '@/hooks/useSelectedLanguage';
-import { useTourSession } from '@/hooks/useTourSession';
-import type { AppLanguage } from '@/types/appRules';
+import { useDelayedLocationAudio } from '@/hooks/useDelayedLocationAudio';
+import StickyAudioControlBar from '../audio/StickyAudioControlBar';
+import SMRUCampusWorldMap from '../map/SMRUCampusWorldMap';
 
 export default function VirtualTourShell() {
+  useDelayedLocationAudio();
   const router = useRouter();
   const selectedLanguage = useSelectedLanguage();
-  const { patch } = useTourSession();
-  const [currentLocation, setCurrentLocation] = useState<any | null>(mediaSync.getCurrent());
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [locations, setLocations] = useState<CampusLocation[]>([]);
+  const [currentLocation, setCurrentLocation] = useState<CampusLocation | null>(mediaSync.getCurrent());
   const [audioState, setAudioState] = useState(audioEngine.getState());
-  const categories = getCategories(campusLocations);
-  
-  // Get filtered locations based on selected category
-  const filteredLocations = selectedCategory 
-    ? filterByCategory(selectedCategory, campusLocations)
-    : campusLocations;
+  const [tourComplete, setTourComplete] = useState(false);
 
-  // Get current location index in filtered list
-  const currentLocationId = currentLocation?.id;
-  const currentIndex = filteredLocations.findIndex(loc => loc.id === currentLocationId);
-  const displayIndex = currentIndex >= 0 ? currentIndex : 0;
-  const totalLocations = filteredLocations.length;
-
-  // Subscribe to mediaSync changes
   useEffect(() => {
-    const unsubscribe = mediaSync.subscribe((location) => {
-      setCurrentLocation(location);
+    const load = () => {
+      const activeLocations = LocationStore.getAllLocations()
+        .filter((loc) => loc.active)
+        .sort((a, b) => (a.routeOrder || 0) - (b.routeOrder || 0));
+      setLocations(activeLocations);
+    };
+    load();
+    window.addEventListener('smru_locations_updated', load);
+    return () => window.removeEventListener('smru_locations_updated', load);
+  }, []);
+
+  useEffect(() => {
+    const unsub = mediaSync.subscribe((location) => {
+      setCurrentLocation(location || null);
     });
-    return unsubscribe;
+    return unsub;
   }, []);
 
   useEffect(() => {
-    const unsubscribe = audioEngine.subscribe(setAudioState);
-    return unsubscribe;
+    const unsub = audioEngine.subscribe(setAudioState);
+    return () => {
+      unsub();
+      audioEngine.stop();
+    };
   }, []);
 
-  // Initialize with first location if none selected
   useEffect(() => {
-    if (!currentLocation && filteredLocations.length > 0) {
-      mediaSync.setCurrentByLocationId(filteredLocations[0].id);
-    }
-  }, [currentLocation, filteredLocations]);
+    audioEngine.setLanguage(selectedLanguage.language);
+  }, [selectedLanguage.language]);
 
-  // When category changes, reset to first location in that category
+  const locationIds = useMemo(() => locations.map((loc) => loc.id), [locations]);
+  const currentIndex = currentLocation ? locationIds.indexOf(currentLocation.id) : -1;
+  const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+  const isAtFirst = safeIndex <= 0;
+  const isAtLast = locations.length > 0 && safeIndex >= locations.length - 1;
+
   useEffect(() => {
-    if (filteredLocations.length > 0) {
-      mediaSync.setCurrentByLocationId(filteredLocations[0].id);
+    if (locations.length === 0) return;
+    if (!currentLocation || !locationIds.includes(currentLocation.id)) {
+      mediaSync.setCurrentByLocationId(locations[0].id);
+      setTourComplete(false);
     }
-  }, [selectedCategory]);
+  }, [currentLocation, locationIds, locations]);
+
+  const handleSelectLocation = (locationId: string) => {
+    setTourComplete(false);
+    mediaSync.setCurrentByLocationId(locationId);
+  };
 
   const handleNext = () => {
-    const nextIndex = (displayIndex + 1) % totalLocations;
-    mediaSync.setCurrentByLocationId(filteredLocations[nextIndex].id);
+    if (locations.length === 0) return;
+    if (isAtLast) {
+      setTourComplete(true);
+      return;
+    }
+    setTourComplete(false);
+    mediaSync.setCurrentByLocationId(locations[safeIndex + 1].id);
   };
 
   const handlePrev = () => {
-    const prevIndex = (displayIndex - 1 + totalLocations) % totalLocations;
-    mediaSync.setCurrentByLocationId(filteredLocations[prevIndex].id);
+    if (locations.length === 0 || isAtFirst) return;
+    setTourComplete(false);
+    mediaSync.setCurrentByLocationId(locations[safeIndex - 1].id);
   };
 
   const handleBack = () => {
@@ -74,11 +93,6 @@ export default function VirtualTourShell() {
       return;
     }
     router.push('/');
-  };
-
-  const handleLanguageChange = (language: AppLanguage) => {
-    patch({ language });
-    audioEngine.setLanguage(language);
   };
 
   const handleToggleAudio = () => {
@@ -90,139 +104,93 @@ export default function VirtualTourShell() {
     if (!audioEngine.getState().isAvailable) return;
     if (audioState.isPlaying) {
       audioEngine.pause();
-    } else {
-      audioEngine.play();
+      return;
     }
+    void audioEngine.play();
   };
 
+  if (locations.length === 0) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-slate-50 text-slate-900">
+        <div className="rounded-2xl border border-slate-200 bg-white px-6 py-5 text-center text-lg font-semibold shadow-sm">
+          No active locations available for Virtual Tour.
+        </div>
+      </div>
+    );
+  }
+
   if (!currentLocation) {
-    return <div className="w-full h-screen flex items-center justify-center bg-slate-950 text-white">No locations available</div>;
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-slate-50 text-slate-900">
+        <div className="rounded-2xl border border-slate-200 bg-white px-6 py-5 text-center text-lg font-semibold shadow-sm">
+          Loading Virtual Tour...
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="w-full min-h-screen bg-linear-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
-      {/* Header with selected language */}
-      <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-950/80 backdrop-blur-sm sticky top-0 z-20">
+    <div className="tour-shell min-h-screen w-full text-slate-900">
+      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/80 bg-white/90 p-4 backdrop-blur-sm sm:p-5">
         <div className="flex items-center gap-3">
           <button
             onClick={handleBack}
-            className="h-10 px-3 inline-flex items-center justify-center bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium transition-all active:scale-95"
+            className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-50 active:scale-95"
             title="Go back"
             aria-label="Go back"
           >
-            ← Back
+            Back
           </button>
           <div>
-          <h1 className="text-2xl font-bold text-white">🌐 Virtual Campus Tour</h1>
-          <p className="text-sm text-slate-400 mt-1">Explore remotely • No GPS required</p>
+            <h1 className="title-page">Virtual Campus Tour</h1>
+            <p className="mt-1 text-sm text-slate-600">Available from anywhere. No GPS required.</p>
           </div>
-        </div>
-        <div className="inline-flex rounded-lg border border-slate-700 bg-slate-800 p-1">
-          {(['en', 'te', 'hi'] as AppLanguage[]).map((lang) => {
-            const active = selectedLanguage === lang;
-            return (
-              <button
-                key={lang}
-                onClick={() => handleLanguageChange(lang)}
-                className={`h-8 rounded-md px-3 text-xs font-semibold transition ${
-                  active ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-700'
-                }`}
-              >
-                {lang.toUpperCase()}
-              </button>
-            );
-          })}
         </div>
       </div>
 
-      {/* Main content area */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6 max-w-7xl mx-auto">
-        {/* Location panel - large on desktop, stacked on mobile */}
-        <div className="lg:col-span-2">
-          <VirtualLocationPanel
-            location={currentLocation}
-            language={selectedLanguage}
-            currentIndex={displayIndex}
-            totalLocations={totalLocations}
+      <div className="space-y-4 px-4 py-5 pb-40 sm:px-6">
+        {/* Interactive Map Header */}
+        <div className="overflow-hidden rounded-3xl border-4 border-slate-100 bg-slate-50 shadow-inner">
+          <SMRUCampusWorldMap 
+            language={selectedLanguage.language}
+            allowedLocationIds={locationIds}
           />
         </div>
 
-        {/* Sidebar - filters and navigation */}
-        <div className="space-y-6">
-          {/* Location counter and sequence progress */}
-          <div className="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700">
-            <div className="text-sm text-slate-400 mb-3">Location Sequence</div>
-            <div className="text-3xl font-bold text-blue-400 mb-2">{displayIndex + 1}</div>
-            <div className="text-sm text-slate-400 mb-4">of {totalLocations}</div>
-            {/* Progress bar */}
-            <div className="w-full bg-slate-700 rounded-full h-2">
-              <div
-                className="bg-linear-to-r from-blue-500 to-cyan-400 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${((displayIndex + 1) / totalLocations) * 100}%` }}
-              />
+        <div className="panel-soft p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm font-semibold text-slate-600">Route Progress</div>
+              <div className="text-2xl font-black text-blue-700">{safeIndex + 1} of {locations.length}</div>
             </div>
+            <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-blue-50 text-xl shadow-inner">📍</div>
           </div>
-
-          {/* Category filters */}
-          <div className="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700">
-            <div className="text-sm text-slate-400 mb-3">Filter by Category</div>
-            <div className="space-y-2">
-              {/* All locations option */}
-              <button
-                onClick={() => setSelectedCategory(null)}
-                className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition ${
-                  selectedCategory === null
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                }`}
-              >
-                All Locations
-              </button>
-              {/* Category chips */}
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition ${
-                    selectedCategory === cat
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      <div className="fixed inset-x-0 bottom-4 z-30 px-4">
-        <div className="mx-auto max-w-2xl rounded-2xl border border-slate-700 bg-slate-900/95 p-3 shadow-2xl backdrop-blur">
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              onClick={handlePrev}
-              className="h-11 rounded-xl bg-slate-700 text-sm font-semibold text-slate-100 hover:bg-slate-600 transition"
-            >
-              ← Prev
-            </button>
-            <button
-              onClick={handleToggleAudio}
-              disabled={audioState.isLoading || !audioState.isAvailable}
-              className="h-11 rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700 transition disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
-            >
-              {audioState.isLoading ? 'Loading...' : audioState.isPlaying ? '⏸ Pause' : '▶ Play'}
-            </button>
-            <button
-              onClick={handleNext}
-              className="h-11 rounded-xl bg-blue-700 text-sm font-semibold text-white hover:bg-blue-800 transition"
-            >
-              Next →
-            </button>
+          <div className="mt-3 h-2 w-full rounded-full bg-slate-100">
+            <div
+              className="h-2 rounded-full bg-linear-to-r from-blue-500 to-cyan-400 transition-all duration-300"
+              style={{ width: `${((safeIndex + 1) / locations.length) * 100}%` }}
+            />
           </div>
         </div>
+
+        {tourComplete && (
+          <div className="panel-soft border-emerald-200 bg-emerald-50 p-5 shadow-sm animate-in zoom-in duration-500">
+            <div className="text-lg font-black text-emerald-800">Virtual Journey Complete ✨</div>
+            <div className="mt-1 text-sm font-bold text-emerald-700/80 leading-relaxed">
+              You've explored all the major landmarks of St. Mary's University remotely. Ready to visit us in person?
+            </div>
+          </div>
+        )}
+
+        <VirtualLocationPanel
+          location={currentLocation}
+          language={selectedLanguage.language}
+          currentIndex={safeIndex}
+          totalLocations={locations.length}
+        />
       </div>
+
+      <StickyAudioControlBar />
     </div>
   );
 }

@@ -1,75 +1,84 @@
-import { roadGraph, type RoadNode } from './roadGraphBuilder';
+import { roadGraph } from './roadGraphBuilder';
 
 export interface RouteResult {
-  path: RoadNode[];
-  distance: number;
+  path: [number, number][]; // Array of [lat, lon]
+  distance: number; // In meters
+  instructions: string[];
 }
 
 export class CampusRouteEngine {
-  calculatePath(startX: number, startY: number, endX: number, endY: number): RouteResult | null {
-    const startNodeId = roadGraph.getNearestNode(startX, startY);
-    const endNodeId = roadGraph.getNearestNode(endX, endY);
+  findRoute(startLat: number, startLon: number, endLat: number, endLon: number): RouteResult | null {
+    const startNodeId = roadGraph.getNearestNode(startLat, startLon);
+    const endNodeId = roadGraph.getNearestNode(endLat, endLon);
 
     if (!startNodeId || !endNodeId) return null;
     if (startNodeId === endNodeId) {
-      const node = roadGraph.nodes.get(startNodeId)!;
-      return { path: [node], distance: 0 };
+      return { path: [[startLat, startLon], [endLat, endLon]], distance: 0, instructions: ['You have arrived at your destination.'] };
     }
 
-    // Dijkstra's Algorithm
     const distances: Map<string, number> = new Map();
     const previous: Map<string, string | null> = new Map();
-    const nodes = new Set(roadGraph.nodes.keys());
+    const nodes = Array.from(roadGraph.nodes.keys());
+    const queue = new Set(nodes);
 
-    roadGraph.nodes.forEach((_, id) => {
-      distances.set(id, Infinity);
-      previous.set(id, null);
+    nodes.forEach(node => {
+      distances.set(node, Infinity);
+      previous.set(node, null);
     });
 
     distances.set(startNodeId, 0);
 
-    while (nodes.size > 0) {
-      // Find node with minimum distance
-      let closestNodeId: string | null = null;
-      let minDistance = Infinity;
+    while (queue.size > 0) {
+      let minNode: string | null = null;
+      let minDist = Infinity;
 
-      nodes.forEach((id) => {
-        if (distances.get(id)! < minDistance) {
-          minDistance = distances.get(id)!;
-          closestNodeId = id;
+      queue.forEach(node => {
+        const d = distances.get(node)!;
+        if (d < minDist) {
+          minDist = d;
+          minNode = node;
         }
       });
 
-      if (!closestNodeId || distances.get(closestNodeId) === Infinity) break;
-      if (closestNodeId === endNodeId) break;
+      if (!minNode || distances.get(minNode) === Infinity) break;
+      if (minNode === endNodeId) break;
 
-      nodes.delete(closestNodeId);
+      queue.delete(minNode);
 
-      const neighbors = roadGraph.adj.get(closestNodeId) || [];
-      for (const edge of neighbors) {
-        if (!nodes.has(edge.to)) continue;
-        
-        const alt = distances.get(closestNodeId)! + edge.distance;
+      const neighbors = roadGraph.adj.get(minNode) || [];
+      neighbors.forEach(edge => {
+        if (!queue.has(edge.to)) return;
+        const alt = distances.get(minNode!)! + edge.distance;
         if (alt < distances.get(edge.to)!) {
           distances.set(edge.to, alt);
-          previous.set(edge.to, closestNodeId);
+          previous.set(edge.to, minNode);
         }
-      }
+      });
     }
 
     if (previous.get(endNodeId) === null) return null;
 
-    // Reconstruct path
-    const path: RoadNode[] = [];
-    let currId: string | null = endNodeId;
-    while (currId) {
-      path.unshift(roadGraph.nodes.get(currId)!);
-      currId = previous.get(currId) || null;
+    const path: [number, number][] = [];
+    let curr: string | null = endNodeId;
+    while (curr) {
+      const node = roadGraph.nodes.get(curr)!;
+      path.unshift([node.latitude, node.longitude]);
+      curr = previous.get(curr)!;
     }
+
+    // Add actual start/end points for precision
+    path.unshift([startLat, startLon]);
+    path.push([endLat, endLon]);
+
+    const totalDistance = distances.get(endNodeId)!;
 
     return {
       path,
-      distance: distances.get(endNodeId)!
+      distance: Math.round(totalDistance),
+      instructions: [
+        `Walk approximately ${Math.round(totalDistance)} meters along the campus roads.`,
+        'Follow the orange highlighted path on your map.'
+      ]
     };
   }
 }

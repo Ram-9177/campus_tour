@@ -17,7 +17,7 @@ export default function AudioUrlEditor({ audio, onChange, lang }: Props) {
   return (
     <div className="space-y-2">
       <label className="block text-xs font-bold text-slate-500 uppercase">
-        Audio File Path ({lang.toUpperCase()})
+        Audio URL / File Path ({lang.toUpperCase()})
       </label>
       <div className="flex gap-2">
         <div className="flex-1 relative">

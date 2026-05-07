@@ -15,6 +15,7 @@ interface PageShellProps {
   contentClassName?: string;
   showBottomNav?: boolean;
   showAIGuideButton?: boolean;
+  showStickyActions?: boolean;
 }
 
 export default function PageShell({
@@ -27,11 +28,11 @@ export default function PageShell({
   contentClassName,
   showBottomNav = true,
   showAIGuideButton = true,
+  showStickyActions = true,
 }: PageShellProps) {
   return (
     <div
-      className={`min-h-dvh bg-[#f8fbff] text-slate-900 ${className ?? ''}`}
-      style={{ backgroundImage: 'radial-gradient(circle at top, rgba(11,87,208,0.10), transparent 42%), linear-gradient(to bottom, #f5f9ff, #ffffff 44%, #f6f9ff)' }}
+      className={`tour-shell min-h-dvh text-slate-900 ${className ?? ''}`}
     >
       <AppHeader title={title} subtitle={subtitle} backHref={backHref} backLabel={backLabel} />
       <OfflineNotice />
@@ -39,7 +40,7 @@ export default function PageShell({
         {children}
       </main>
 
-      <StickyActions />
+      {showStickyActions ? <StickyActions /> : null}
       {showAIGuideButton && showBottomNav ? <AIGuideButton /> : null}
       {showBottomNav ? <BottomNav /> : null}
     </div>

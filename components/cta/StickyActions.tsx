@@ -2,19 +2,29 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { mockBrochures } from '@/data/mockBrochures';
 
 export default function StickyActions() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
   const featured = useMemo(() => mockBrochures.find((item) => item.featured) ?? mockBrochures[0], []);
+  const hideOnImmersivePages =
+    pathname === '/map' ||
+    pathname.startsWith('/map/') ||
+    pathname === '/virtual-tour' ||
+    pathname.startsWith('/virtual-tour/') ||
+    pathname.startsWith('/admin');
+
+  if (hideOnImmersivePages) return null;
 
   return (
-    <aside className="fixed right-3 top-1/2 z-40 -translate-y-1/2">
-      <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-2 shadow-[0_12px_32px_rgba(15,23,42,0.16)] backdrop-blur-xl">
+    <aside className="fixed right-3 top-1/2 z-30 -translate-y-1/2 sm:right-4">
+      <div className="flex flex-col gap-2 rounded-2xl border border-slate-200/80 bg-white/92 p-2 shadow-[0_12px_32px_rgba(15,23,42,0.16)] backdrop-blur-xl">
         <Link
           href="https://wa.me/917331119438"
           target="_blank"
-          className="mb-2 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-linear-to-br from-[#22c55e] to-[#16a34a] text-white shadow-md transition-all hover:scale-105 hover:shadow-lg"
+          className="flex h-11 w-11 items-center justify-center rounded-xl bg-linear-to-br from-[#22c55e] to-[#16a34a] text-white shadow-md transition-all hover:scale-105 hover:shadow-lg"
           aria-label="Open WhatsApp"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-current">
@@ -25,7 +35,7 @@ export default function StickyActions() {
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-linear-to-br from-[#2563eb] to-[#1d4ed8] text-white shadow-md transition-all hover:scale-105 hover:shadow-lg"
+          className="flex h-11 w-11 items-center justify-center rounded-xl bg-linear-to-br from-[#2563eb] to-[#1d4ed8] text-white shadow-md transition-all hover:scale-105 hover:shadow-lg"
           aria-expanded={open}
           aria-controls="brochure-dropdown"
           aria-label="Open brochures"
@@ -36,7 +46,7 @@ export default function StickyActions() {
         </button>
 
         {open ? (
-          <div id="brochure-dropdown" className="mt-2 w-64 rounded-2xl border border-slate-200/90 bg-white/95 p-2 shadow-[0_12px_30px_rgba(15,23,42,0.16)] backdrop-blur">
+          <div id="brochure-dropdown" className="mt-1 w-64 rounded-2xl border border-slate-200/90 bg-white/95 p-2 shadow-[0_12px_30px_rgba(15,23,42,0.16)] backdrop-blur">
             <a
               href={featured?.fileUrl ?? '/brochures'}
               download

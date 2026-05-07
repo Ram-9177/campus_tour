@@ -1,18 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import mediaSync from '@/lib/mediaSyncEngine';
 import { locationSequence, type TourProgress } from '@/lib/locationSequence';
 import type { CampusLocation } from '@/types/campusLocation';
+import { useTourSession } from './useTourSession';
+import { resolveLocationExperience, type LocationExperience } from '@/lib/locationExperienceResolver';
 
 export function useLocationExperience() {
+  const { session } = useTourSession();
   const [currentLocation, setCurrentLocation] = useState<CampusLocation | null>(null);
   const [progress, setProgress] = useState<TourProgress>(locationSequence.getProgress());
 
   useEffect(() => {
     const unsubMedia = mediaSync.subscribe((loc) => {
       setCurrentLocation(loc || null);
-      // Refresh progress whenever location changes (as it marks visited/skipped)
       setProgress(locationSequence.getProgress());
     });
 
@@ -20,6 +22,15 @@ export function useLocationExperience() {
       unsubMedia();
     };
   }, []);
+
+  const experience = useMemo((): LocationExperience | null => {
+    if (!currentLocation || !session) return null;
+    return resolveLocationExperience({
+      location: currentLocation,
+      mode: session.navigationMode,
+      language: session.language
+    });
+  }, [currentLocation, session]);
 
   const goToNext = () => mediaSync.next();
   const goToPrev = () => mediaSync.prev();
@@ -32,6 +43,7 @@ export function useLocationExperience() {
 
   return {
     currentLocation,
+    experience,
     progress,
     goToNext,
     goToPrev,

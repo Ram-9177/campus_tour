@@ -7,6 +7,28 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+const PROMPT_STATE_KEY = 'smru_pwa_install_prompt_state_v1';
+
+type PromptState = 'dismissed' | 'accepted' | null;
+
+function readPromptState(): PromptState {
+  if (typeof window === 'undefined') return null;
+  const value = window.localStorage.getItem(PROMPT_STATE_KEY);
+  return value === 'dismissed' || value === 'accepted' ? value : null;
+}
+
+function writePromptState(state: Exclude<PromptState, null>) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(PROMPT_STATE_KEY, state);
+}
+
+function isRunningAsInstalledApp(): boolean {
+  if (typeof window === 'undefined') return false;
+  const standaloneIOS = (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+  const standaloneDisplay = window.matchMedia('(display-mode: standalone)').matches;
+  return standaloneIOS || standaloneDisplay;
+}
+
 export default function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
@@ -27,14 +49,21 @@ export default function PWAInstallPrompt() {
       }
     }
 
+    let updateIntervalId: number | null = null;
+
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
+      if (readPromptState() || isRunningAsInstalledApp()) {
+        setShowPrompt(false);
+        return;
+      }
       const beforeInstallPromptEvent = event as BeforeInstallPromptEvent;
       setDeferredPrompt(beforeInstallPromptEvent);
       setShowPrompt(true);
     };
 
     const handleAppInstalled = () => {
+      writePromptState('accepted');
       setDeferredPrompt(null);
       setShowPrompt(false);
     };
@@ -45,15 +74,13 @@ export default function PWAInstallPrompt() {
       navigator.serviceWorker
         .register('/sw.js', { scope: '/' })
         .then((registration) => {
-          console.log('Service Worker registered:', registration);
-
           // Check for updates periodically
-          setInterval(() => {
+          updateIntervalId = window.setInterval(() => {
             registration.update();
           }, 60000); // Check every minute
         })
-        .catch((error) => {
-          console.error('Service Worker registration failed:', error);
+        .catch(() => {
+          // Ignore registration errors in UI layer.
         });
     }
 
@@ -66,6 +93,9 @@ export default function PWAInstallPrompt() {
         handleBeforeInstallPrompt
       );
       window.removeEventListener('appinstalled', handleAppInstalled);
+      if (updateIntervalId !== null) {
+        window.clearInterval(updateIntervalId);
+      }
     };
   }, []);
 
@@ -75,15 +105,22 @@ export default function PWAInstallPrompt() {
     try {
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      console.log(`User response to the install prompt: ${outcome}`);
+      if (outcome === 'accepted') {
+        writePromptState('accepted');
+      } else {
+        writePromptState('dismissed');
+      }
       setDeferredPrompt(null);
       setShowPrompt(false);
-    } catch (error) {
-      console.error('Install prompt error:', error);
+    } catch {
+      writePromptState('dismissed');
+      setShowPrompt(false);
     }
   };
 
   const handleDismiss = () => {
+    writePromptState('dismissed');
+    setDeferredPrompt(null);
     setShowPrompt(false);
   };
 

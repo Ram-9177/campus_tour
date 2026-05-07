@@ -1,5 +1,6 @@
 import React from 'react';
 import { smruMapConfig } from '@/data/map/smruMapConfig';
+import type { MapRoad } from '@/types/mapData';
 
 type Props = {
   stroke?: string;
@@ -11,9 +12,12 @@ function pointsToPath(points: Array<{ x: number; y: number }>) {
 }
 
 export default function RoadLayer({ stroke = '#f97316', strokeWidth = 8 }: Props) {
+  const roads = smruMapConfig.data.roads as MapRoad[];
+  const boundary = smruMapConfig.data.boundary as MapRoad | null;
+
   return (
     <g data-layer="roads">
-      {smruMapConfig.data.roads.map((road) => (
+      {roads.map((road) => (
         <path
           key={road.id}
           d={pointsToPath(road.coordinates as any)}
@@ -23,10 +27,10 @@ export default function RoadLayer({ stroke = '#f97316', strokeWidth = 8 }: Props
           strokeLinecap="round"
         />
       ))}
-      {smruMapConfig.data.boundary && (
+      {boundary && (
         <path
-          key={smruMapConfig.data.boundary.id}
-          d={pointsToPath(smruMapConfig.data.boundary.coordinates as any)}
+          key={boundary.id}
+          d={pointsToPath(boundary.coordinates as any)}
           fill="none"
           stroke="#94a3b8"
           strokeWidth="3"

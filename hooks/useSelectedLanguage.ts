@@ -1,22 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useTourSession } from '@/hooks/useTourSession';
 import type { AppLanguage } from '@/types/appRules';
-import { getTourSession } from '@/lib/tourSession';
 
-function readLanguage(): AppLanguage {
-  return getTourSession().language;
-}
+export function useSelectedLanguage() {
+  const { session } = useTourSession();
+  const language = (session?.language || 'en') as AppLanguage;
 
-export function useSelectedLanguage(): AppLanguage {
-  const [language, setLanguage] = useState<AppLanguage>('en');
+  const t = (localizedText: { en: string; te?: string; hi?: string } | undefined | null, fallback?: string) => {
+    if (!localizedText) return fallback || '';
+    
+    const val = localizedText[language];
+    if (val && val.trim().length > 0) return val;
+    
+    // If it's English and missing, return fallback or empty
+    if (language === 'en') return localizedText.en || fallback || '';
+    
+    // If selected language (te, hi) is missing:
+    return 'Content coming soon in selected language.';
+  };
 
-  useEffect(() => {
-    const sync = () => setLanguage(readLanguage());
-    sync();
-    window.addEventListener('smru_tour_session_updated', sync);
-    return () => window.removeEventListener('smru_tour_session_updated', sync);
-  }, []);
-
-  return language;
+  return { language, t };
 }

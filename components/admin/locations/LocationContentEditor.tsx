@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { CampusLocation } from '@/types/campusLocation';
 import LanguageTabs from './LanguageTabs';
 import MediaUrlEditor from './MediaUrlEditor';
+import AudioUrlEditor from './AudioUrlEditor';
 
 interface Props {
   data: Partial<CampusLocation>;
@@ -28,6 +29,7 @@ export default function LocationContentEditor({ data, onChange }: Props) {
   };
 
   const scriptText = data.script?.[activeLang] || '';
+  const audioData = data.audio || { en: '', te: '', hi: '' };
 
   return (
     <div className="space-y-6">
@@ -61,6 +63,22 @@ export default function LocationContentEditor({ data, onChange }: Props) {
                 {scriptText.length} / {SCRIPT_MAX_CHARS}
               </span>
             </div>
+            
+            <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50/50 p-4">
+              <h4 className="flex items-center gap-2 text-[11px] font-black uppercase tracking-tight text-blue-800">
+                <span>💡</span> Default Script Guidance
+              </h4>
+              <p className="mt-2 text-xs leading-relaxed text-slate-700">
+                The default script is used when no mode-specific variant is provided. 
+                Keep it <strong>versatile, direct, and factual</strong>.
+              </p>
+              <div className="mt-3 border-t border-blue-100 pt-3">
+                 <p className="text-[10px] font-bold text-blue-900/60 uppercase tracking-widest">
+                   🚫 Institutional Rules: No fake claims, No rankings, No guaranteed placements, No fake fees.
+                 </p>
+              </div>
+            </div>
+
             <div className="relative">
               <textarea
                 value={scriptText}
@@ -68,15 +86,8 @@ export default function LocationContentEditor({ data, onChange }: Props) {
                 className={`w-full h-80 p-4 rounded-xl border text-sm focus:ring-2 outline-hidden resize-none font-serif leading-relaxed ${
                   scriptText.length > SCRIPT_MAX_CHARS ? 'border-red-300 focus:ring-red-500' : 'border-slate-200 focus:ring-blue-500'
                 }`}
-                placeholder="Write the narration script here. The PWA will automatically read this text aloud using AI voice."
+                placeholder="Write the narration script here. This text is paired with the uploaded audio file for the same language."
               />
-              <div className="absolute top-4 right-4 flex items-center gap-1.5 px-2 py-1 bg-blue-50 text-blue-600 rounded-lg border border-blue-100 shadow-sm pointer-events-none">
-                <span className="text-[10px] font-bold uppercase tracking-wider">AI Audio Enabled</span>
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                </span>
-              </div>
             </div>
             {!scriptText && (
               <p className="text-[10px] text-amber-600 font-medium mt-1 italic">
@@ -86,9 +97,20 @@ export default function LocationContentEditor({ data, onChange }: Props) {
             {scriptText && (
               <p className="text-[10px] text-slate-400 font-medium mt-2 flex items-center gap-1">
                 <span>ℹ️</span>
-                Audio is automatically generated from the script above. No MP3 upload needed.
+                Upload the matching audio file URL below. The script is shown for editor reference only.
               </p>
             )}
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-4">
+            <div>
+              <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wide">Audio File URLs</h4>
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                These uploaded audio files are the primary playback source for the public PWA.
+              </p>
+            </div>
+
+            <AudioUrlEditor audio={audioData} onChange={(audio) => onChange({ ...data, audio })} lang={activeLang} />
           </div>
         </div>
 
@@ -124,7 +146,7 @@ export default function LocationContentEditor({ data, onChange }: Props) {
 
           <div className="pt-4 border-t border-slate-200">
             <h5 className="text-[10px] font-bold text-slate-400 uppercase mb-2">Voice Guide Preview</h5>
-            <div className="bg-white p-4 rounded-xl border border-slate-100 min-h-[100px] text-sm text-slate-700 leading-relaxed italic">
+            <div className="bg-white p-4 rounded-xl border border-slate-100 min-h-25 text-sm text-slate-700 leading-relaxed italic">
               {scriptText || <span className="text-slate-300 italic">No script content entered for {activeLang.toUpperCase()}.</span>}
             </div>
           </div>

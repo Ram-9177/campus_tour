@@ -1,23 +1,17 @@
 export default function MapLegend() {
   const items = [
-    { label: 'Blocks', color: 'bg-blue-600' },
-    { label: 'Internal Roads', color: 'bg-slate-500' },
-    { label: 'Walking Paths', color: 'bg-cyan-600' },
-    { label: 'Cart Routes', color: 'bg-sky-500' },
-    { label: 'Cart Stops', color: 'bg-sky-700' },
-    { label: 'Parking Points', color: 'bg-indigo-500' },
-    { label: 'Drop Points', color: 'bg-violet-500' },
-    { label: 'Stop Markers', color: 'bg-teal-600' },
+    { label: 'Campus Roads', color: 'bg-orange-500' },
+    { label: 'Tour Stops', color: 'bg-blue-500' },
+    { label: 'Selected Stop', color: 'bg-blue-700' },
   ];
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">Map Legend</h3>
-      <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-slate-700">
+    <section className="panel-soft p-3.5 shadow-sm">
+      <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
         {items.map((item) => (
-          <div key={item.label} className="flex items-center gap-2.5 rounded-lg hover:bg-slate-50 px-2 py-1.5 transition">
-            <span className={`h-3 w-3 rounded-full shrink-0 ${item.color}`} aria-hidden="true" />
-            <span className="text-slate-700 font-medium">{item.label}</span>
+          <div key={item.label} className="flex items-center gap-2.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5">
+            <span className={`h-3.5 w-3.5 shrink-0 rounded-full ${item.color}`} aria-hidden="true" />
+            <span className="font-medium text-slate-700">{item.label}</span>
           </div>
         ))}
       </div>

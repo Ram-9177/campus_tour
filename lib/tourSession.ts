@@ -8,6 +8,7 @@ export const DEFAULT_TOUR_SESSION: TourSession = {
   visitorType: 'other',
   language: 'en',
   navigationMode: 'manual_explore',
+  campusAccessDecision: null,
   currentLocationId: null,
   visitedLocationIds: [],
   audioStarted: false,
@@ -32,6 +33,12 @@ function sanitizeSession(input: Partial<TourSession> | null | undefined): TourSe
     visitorType: input?.visitorType ?? DEFAULT_TOUR_SESSION.visitorType,
     language: input?.language ?? DEFAULT_TOUR_SESSION.language,
     navigationMode: input?.navigationMode ?? DEFAULT_TOUR_SESSION.navigationMode,
+    campusAccessDecision:
+      input?.campusAccessDecision === 'inside-campus' ||
+      input?.campusAccessDecision === 'outside-campus' ||
+      input?.campusAccessDecision === 'unknown-location'
+        ? input.campusAccessDecision
+        : DEFAULT_TOUR_SESSION.campusAccessDecision,
     currentLocationId: typeof input?.currentLocationId === 'string' ? input.currentLocationId : null,
     visitedLocationIds: visited,
     audioStarted: Boolean(input?.audioStarted),

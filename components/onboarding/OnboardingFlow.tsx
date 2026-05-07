@@ -1,48 +1,43 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { AppTourMode } from '@/types/appRules';
 import { useTourSession } from '@/hooks/useTourSession';
-import WelcomeStep from './WelcomeStep';
+import TourAccessGate from '@/components/launch/TourAccessGate';
 import BrandLogo from '@/components/layout/BrandLogo';
-import NavigationModeStep from './NavigationModeStep';
-
-type Step = 0 | 1;
 
 export default function OnboardingFlow() {
   const router = useRouter();
   const { patch } = useTourSession();
-  const [step, setStep] = useState<Step>(0);
-  const [navigationMode, setNavigationMode] = useState<AppTourMode | null>(null);
-  const [locationAccess, setLocationAccess] = useState<'inside' | 'outside'>('outside');
   const [showSplash, setShowSplash] = useState(true);
-  const [mounted, setMounted] = useState(false);
+  const [splashFading, setSplashFading] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    const timer = window.setTimeout(() => setShowSplash(false), 4000);
-    return () => window.clearTimeout(timer);
+    // Splash duration: 3.2s show, 0.8s fade = 4s total
+    const fadeTimer = window.setTimeout(() => setSplashFading(true), 3200);
+    const hideTimer = window.setTimeout(() => setShowSplash(false), 4000);
+    
+    // Preload hint (browsers can handle images if we render them invisibly or just trust the cache)
+    return () => {
+      window.clearTimeout(fadeTimer);
+      window.clearTimeout(hideTimer);
+    };
   }, []);
 
-  const progress = useMemo(() => ((step + 1) / 2) * 100, [step]);
-  const wrapperClassName = 'mx-auto w-full max-w-2xl lg:max-w-4xl';
-  const allowedModes = locationAccess === 'outside' ? (['virtual_tour'] as AppTourMode[]) : (['manual_explore', 'virtual_tour'] as AppTourMode[]);
-
   const onMode = (mode: AppTourMode) => {
-    const resolvedMode: AppTourMode = locationAccess === 'outside' ? 'virtual_tour' : mode;
-    setNavigationMode(resolvedMode);
-    patch({ visitorType: 'other', language: 'en', navigationMode: resolvedMode });
+    patch({ visitorType: 'other', navigationMode: mode });
     const target =
-      resolvedMode === 'walk_with_me'
+      mode === 'walk_with_me'
         ? '/map?mode=walk'
-        : resolvedMode === 'campus_cart'
+        : mode === 'campus_cart'
           ? '/map?mode=cart'
-          : resolvedMode === 'manual_explore'
+          : mode === 'manual_explore'
             ? '/map?mode=manual'
             : '/virtual-tour';
 
     router.push(target);
+    // Safety redirect for slow routers
     window.setTimeout(() => {
       if (window.location.pathname + window.location.search !== target) {
         window.location.assign(target);
@@ -50,38 +45,35 @@ export default function OnboardingFlow() {
     }, 150);
   };
 
-  if (!mounted) {
-    return <div className={wrapperClassName} />;
-  }
-
-  if (showSplash) {
-    return (
-      <div className="fixed inset-0 z-50 flex min-h-screen items-center justify-center bg-linear-to-b from-[#ecf4ff] via-white to-[#eaf2ff] px-6">
-        <div className="text-center">
-          <div className="mx-auto inline-flex h-34 w-34 items-center justify-center rounded-[2rem] border border-[#bfd2f8] bg-white shadow-xl sm:h-40 sm:w-40">
-            <BrandLogo className="h-24 w-auto object-contain sm:h-28" />
-          </div>
-          <h1 className="mt-5 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">St. Mary&apos;s University</h1>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className={wrapperClassName}>
-      <div className="mb-4 rounded-2xl border border-slate-200 bg-white/80 p-3 shadow-[0_8px_20px_-18px_rgba(15,23,42,0.45)] backdrop-blur sm:p-4">
-        <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-600">
-          <span>Step {step + 1} of 2</span>
-          <span>{Math.round(progress)}%</span>
+    <div className="tour-shell relative flex min-h-dvh flex-col overflow-hidden bg-white text-slate-900">
+      {/* Background accents */}
+      <div className="pointer-events-none absolute -left-16 top-24 h-56 w-56 rounded-full bg-blue-100/20 blur-3xl" />
+      <div className="pointer-events-none absolute -right-20 bottom-20 h-64 w-64 rounded-full bg-slate-100/30 blur-3xl" />
+      
+      {/* Premium Full-Screen White Splash */}
+      {showSplash ? (
+        <div
+          className={`fixed inset-0 z-100 flex items-center justify-center bg-white px-6 transition-opacity duration-700 ${
+            splashFading ? 'opacity-0' : 'opacity-100'
+          }`}
+        >
+          <div className="text-center">
+            <div className="mx-auto flex h-32 w-32 items-center justify-center rounded-full bg-white sm:h-40 sm:w-40">
+              <BrandLogo className="h-24 w-auto object-contain sm:h-28" />
+            </div>
+            <div className="mt-8 space-y-2">
+              <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-5xl">St. Mary&apos;s University</h1>
+              <div className="mx-auto h-0.5 w-12 bg-blue-600/30 rounded-full" />
+              <p className="text-sm font-bold uppercase tracking-[0.3em] text-slate-400 sm:text-base">SMRU Campus Tour</p>
+            </div>
+          </div>
         </div>
-        <div className="h-2 rounded-full bg-slate-100">
-          <div className="h-2 rounded-full bg-[#0b57d0] transition-all duration-300" style={{ width: `${progress}%` }} />
-        </div>
-      </div>
+      ) : null}
 
-      <div className="transition-all duration-200">
-        {step === 0 ? <WelcomeStep onNext={(access) => { setLocationAccess(access); setStep(1); }} /> : null}
-        {step === 1 ? <NavigationModeStep value={navigationMode} onSelect={onMode} allowedModes={allowedModes} lockReason={locationAccess === 'outside' ? 'You are outside campus range. Only Virtual Tour is available.' : null} /> : null}
+      {/* Main Flow Container */}
+      <div className={`flex min-h-dvh flex-1 flex-col items-center justify-center px-4 py-8 transition-opacity duration-700 sm:px-6 lg:px-8 ${showSplash ? 'opacity-0' : 'opacity-100'}`}>
+        <TourAccessGate onSelectMode={onMode} />
       </div>
     </div>
   );

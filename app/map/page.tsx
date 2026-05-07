@@ -1,7 +1,10 @@
+'use client';
+
+import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
 import PageShell from '@/components/layout/PageShell';
-import SectionHeader from '@/components/common/SectionHeader';
-import MapPageClient from '@/components/map/MapPageClient';
+
+const MapPageClient = dynamic(() => import('@/components/map/MapPageClient'), { ssr: false });
 
 function MapContent() {
   return <MapPageClient />;
@@ -9,11 +12,13 @@ function MapContent() {
 
 export default function MapPage() {
   return (
-    <PageShell title="Map" subtitle="Campus overview" backHref="/">
-      <SectionHeader
-        title="Campus map"
-        description="Unified campus map for all modes. Mode-specific points and durations are controlled by admin settings."
-      />
+    <PageShell
+      title="Campus Map"
+      subtitle="SMRU Campus World"
+      backHref="/"
+      showAIGuideButton={false}
+      showStickyActions={false}
+    >
       <Suspense fallback={<div>Loading map...</div>}>
         <MapContent />
       </Suspense>

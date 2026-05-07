@@ -86,7 +86,7 @@ export default function AudioAdminPage() {
       <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-slate-900 mb-4">Audio Guide Manager</h2>
         <p className="text-sm text-slate-600 mb-4">
-          Manage scripts and audio for SMRU campus locations. Published script changes are reflected in tour playback.
+          Manage the multilingual audio file URLs and matching narration scripts for SMRU campus locations.
         </p>
         {savedAt ? (
           <p className="mb-4 text-xs font-medium text-emerald-700">Saved at {savedAt}</p>
@@ -128,15 +128,15 @@ export default function AudioAdminPage() {
                   <div>
                     <div className="font-semibold text-slate-900">{location.name[language]}</div>
                     <div className="text-xs text-slate-600 mt-1">
-                      Audio file: <span className="font-mono text-blue-600">{location.audio[language]}</span>
+                      Audio URL: <span className="font-mono text-blue-600 break-all">{location.audio[language] || 'Not set'}</span>
                     </div>
                   </div>
                   <div className="flex gap-1">
                     <button className="px-2 py-1 rounded bg-blue-100 hover:bg-blue-200 text-blue-900 text-xs font-medium transition">
                       ▶ Preview
                     </button>
-                    <button className="px-2 py-1 rounded bg-green-100 hover:bg-green-200 text-green-900 text-xs font-medium transition">
-                      📤 Upload
+                    <button className="px-2 py-1 rounded bg-green-100 hover:bg-green-200 text-green-900 text-xs font-medium transition" disabled>
+                      📤 Upload (placeholder)
                     </button>
                   </div>
                 </div>
@@ -191,54 +191,11 @@ export default function AudioAdminPage() {
         </div>
       </section>
 
-      {/* Recording guidelines */}
-      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-slate-900 mb-3">Recording Guidelines</h3>
-        <div className="space-y-2 text-sm text-slate-600">
-          <div className="flex gap-2">
-            <span className="text-lg">🎯</span>
-            <div>
-              <div className="font-semibold text-slate-900">Tone & Pace</div>
-              <div>Speak clearly at a moderate pace, friendly and informative</div>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <span className="text-lg">⏱</span>
-            <div>
-              <div className="font-semibold text-slate-900">Duration</div>
-              <div>Keep each guide between 30 seconds to 2 minutes</div>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <span className="text-lg">🎙</span>
-            <div>
-              <div className="font-semibold text-slate-900">Audio Quality</div>
-              <div>MP3 format, 192 kbps, 44.1 kHz sample rate</div>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <span className="text-lg">🌐</span>
-            <div>
-              <div className="font-semibold text-slate-900">Languages</div>
-              <div>Record in English, Telugu, and Hindi</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Future features */}
-      <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
-        <div className="text-sm font-semibold text-amber-900 mb-2">🔮 Future CMS Features</div>
-        <ul className="text-sm text-amber-800 space-y-1">
-          <li>✓ Browser-based audio recorder</li>
-          <li>✓ Upload audio files (MP3, WAV, OGG)</li>
-          <li>✓ Audio waveform editor and trim tool</li>
-          <li>✓ Auto-transcription and translation</li>
-          <li>✓ Text-to-speech preview</li>
-          <li>✓ Multi-language audio synchronization</li>
-          <li>✓ Audio quality checker</li>
-          <li>✓ Batch audio file management</li>
-        </ul>
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-slate-900 mb-3">Notes</h3>
+        <p className="text-sm text-slate-600 leading-relaxed">
+          Uploaded audio files are the playback source in the public app. If a URL is missing, visitors will see Audio coming soon.
+        </p>
       </section>
     </AdminShell>
   );

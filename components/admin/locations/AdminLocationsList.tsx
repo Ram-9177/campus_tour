@@ -60,15 +60,15 @@ export default function AdminLocationsList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-xl font-bold text-slate-900">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h2 className="text-2xl font-bold text-slate-900">
           Campus Locations ({filteredLocations.length})
         </h2>
         <Link 
           href="/admin/locations/new"
-          className="h-11 px-6 rounded-xl bg-blue-600 text-white font-semibold flex items-center justify-center hover:bg-blue-700 transition shadow-sm active:scale-95"
+          className="flex h-12 items-center justify-center rounded-xl bg-blue-600 px-6 text-base font-semibold text-white shadow-sm transition hover:bg-blue-700 active:scale-95"
         >
-          + Add Location
+          Add Location
         </Link>
       </div>
 
@@ -80,10 +80,10 @@ export default function AdminLocationsList() {
 
       {filteredLocations.length === 0 ? (
         <div className="py-12 text-center bg-white rounded-2xl border border-dashed border-slate-300">
-          <p className="text-slate-500">No locations found matching your filters.</p>
+          <p className="text-base text-slate-600">No locations found matching your filters.</p>
           <button 
             onClick={() => { setSearch(''); setCategory('all'); setStatus('all'); }}
-            className="mt-2 text-blue-600 font-semibold text-sm hover:underline"
+            className="mt-2 text-base font-semibold text-blue-600 hover:underline"
           >
             Clear all filters
           </button>

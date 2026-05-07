@@ -2,8 +2,10 @@ import { LocationStore } from './locationStore';
 import type { CampusLocation } from '@/types/campusLocation';
 import audioEngine from './audioGuideEngine';
 import { locationSequence } from './locationSequence';
+import { trackLocationOpen } from './publicTourEvents';
 
 type Listener = (loc?: CampusLocation | null) => void;
+const LOCATION_STORAGE_KEY = 'smru_campus_locations';
 
 class MediaSyncEngine {
   private locations: CampusLocation[] = [];
@@ -15,6 +17,12 @@ class MediaSyncEngine {
     this.refresh();
     if (typeof window !== 'undefined') {
       window.addEventListener('smru_locations_updated', () => this.refresh());
+      window.addEventListener('smru_audio_ended_autoadvance', () => this.next());
+      window.addEventListener('storage', (event) => {
+        if (event.key && event.key !== LOCATION_STORAGE_KEY) return;
+        this.refresh();
+        this.emit();
+      });
     }
   }
 
@@ -68,6 +76,7 @@ class MediaSyncEngine {
     this.current = loc;
     if (loc) {
       locationSequence.markVisited(loc.id);
+      trackLocationOpen(loc.id, loc.slug);
     }
     audioEngine.loadLocation(loc || null);
     this.emit();
@@ -103,6 +112,21 @@ class MediaSyncEngine {
     if (idx < this.locations.length - 1) {
       const next = this.locations[idx + 1];
       this.setCurrentByLocationId(next.id);
+    }
+  }
+
+  skip() {
+    if (!this.current) return;
+    const idx = this.locations.findIndex((l) => l.id === this.current?.id);
+    if (idx === -1) return;
+
+    locationSequence.markVisited(this.current.id);
+    
+    if (idx < this.locations.length - 1) {
+      const next = this.locations[idx + 1];
+      this.setCurrentByLocationId(next.id);
+    } else {
+      this.setCurrentByLocationId(null);
     }
   }
 
